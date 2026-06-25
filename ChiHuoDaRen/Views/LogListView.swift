@@ -61,16 +61,6 @@ struct LogListView: View {
             }
             .searchable(text: $searchText, prompt: "搜店名、菜名、口味")
             .navigationTitle("吃货达人")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingNewLog = true
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .accessibilityLabel("新建探店")
-                }
-            }
 
             Button {
                 showingNewLog = true
@@ -154,11 +144,6 @@ struct LogListView: View {
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            Button("新建探店") {
-                showingNewLog = true
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.tomato)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 80)

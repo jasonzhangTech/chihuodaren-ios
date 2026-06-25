@@ -6,15 +6,29 @@ import AppKit
 #endif
 
 struct PhotoMosaicView: View {
-    let photos: [FoodPhoto]
+    let imageData: [Data]
     let height: CGFloat
     var maxPhotos: Int = 9
     var showsOverflowCount: Bool = true
 
+    init(photos: [FoodPhoto], height: CGFloat, maxPhotos: Int = 9, showsOverflowCount: Bool = true) {
+        self.imageData = photos.map(\.imageData)
+        self.height = height
+        self.maxPhotos = maxPhotos
+        self.showsOverflowCount = showsOverflowCount
+    }
+
+    init(imageData: [Data], height: CGFloat, maxPhotos: Int = 9, showsOverflowCount: Bool = true) {
+        self.imageData = imageData
+        self.height = height
+        self.maxPhotos = maxPhotos
+        self.showsOverflowCount = showsOverflowCount
+    }
+
     var body: some View {
         GeometryReader { proxy in
             Group {
-                if photos.isEmpty {
+                if imageData.isEmpty {
                     ZStack {
                         Rectangle()
                             .fill(Color.tomato.opacity(0.12))
@@ -26,10 +40,10 @@ struct PhotoMosaicView: View {
                         }
                         .foregroundStyle(Color.tomato)
                     }
-                } else if photos.count == 1 {
-                    photoImage(photos[0])
+                } else if imageData.count == 1 {
+                    photoImage(imageData[0])
                 } else {
-                    let displayPhotos = Array(photos.prefix(maxPhotos))
+                    let displayPhotos = Array(imageData.prefix(maxPhotos))
                     let columns = gridColumns(for: displayPhotos.count)
                     let rows = Int(ceil(Double(displayPhotos.count) / Double(columns)))
                     let spacing: CGFloat = 4
@@ -42,13 +56,13 @@ struct PhotoMosaicView: View {
                         alignment: .leading,
                         spacing: spacing
                     ) {
-                        ForEach(Array(displayPhotos.enumerated()), id: \.element.id) { index, photo in
+                        ForEach(Array(displayPhotos.enumerated()), id: \.offset) { index, photoData in
                             ZStack(alignment: .bottomTrailing) {
-                                photoImage(photo)
+                                photoImage(photoData)
                                     .frame(width: itemSize, height: itemSize)
                                     .clipped()
-                                if showsOverflowCount && index == displayPhotos.count - 1 && photos.count > displayPhotos.count {
-                                    Text("+\(photos.count - displayPhotos.count)")
+                                if showsOverflowCount && index == displayPhotos.count - 1 && imageData.count > displayPhotos.count {
+                                    Text("+\(imageData.count - displayPhotos.count)")
                                         .font(.headline.bold())
                                         .foregroundStyle(.white)
                                         .frame(width: itemSize, height: itemSize)
@@ -75,9 +89,9 @@ struct PhotoMosaicView: View {
     }
 
     @ViewBuilder
-    private func photoImage(_ photo: FoodPhoto) -> some View {
+    private func photoImage(_ data: Data) -> some View {
         #if canImport(UIKit)
-        if let uiImage = UIImage(data: photo.imageData) {
+        if let uiImage = UIImage(data: data) {
             Image(uiImage: uiImage)
                 .resizable()
                 .scaledToFill()
@@ -88,7 +102,7 @@ struct PhotoMosaicView: View {
                 .fill(Color.gray.opacity(0.2))
         }
         #elseif canImport(AppKit)
-        if let nsImage = NSImage(data: photo.imageData) {
+        if let nsImage = NSImage(data: data) {
             Image(nsImage: nsImage)
                 .resizable()
                 .scaledToFill()

@@ -12,6 +12,7 @@ struct LogEditorView: View {
     let existingLog: FoodLog?
     @State private var log: FoodLog?
     @State private var selectedItems: [PhotosPickerItem] = []
+    @State private var pendingPhotoData: [Data] = []
     @State private var isPhotoPickerPresented = false
     @State private var isCameraPresented = false
     @State private var isPhotoSourceDialogPresented = false
@@ -21,9 +22,14 @@ struct LogEditorView: View {
     @State private var serviceRating = 0.0
     @State private var dishRating = 0.0
     @State private var dishText = ""
+    @State private var address = ""
+    @State private var district = ""
+    @State private var latitude: Double?
+    @State private var longitude: Double?
     @State private var isPitfall = false
     @State private var isGenerating = false
     @State private var errorMessage: String?
+    @State private var showingLocationPicker = false
 
     private let foodTypes = ["自动识别", "粉面", "烧烤", "火锅", "咖啡", "甜品", "小吃", "正餐", "其他"]
 
@@ -63,6 +69,32 @@ struct LogEditorView: View {
                 }
 
                 TextField("推荐菜，可选，用顿号分隔", text: $dishText)
+            }
+
+            Section("地址") {
+                Button {
+                    showingLocationPicker = true
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "map")
+                            .foregroundStyle(Color.tomato)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(address.isEmpty ? "在地图上选择店铺地址" : address)
+                                .foregroundStyle(address.isEmpty ? .secondary : Color.ink)
+                                .lineLimit(2)
+                            if !district.isEmpty {
+                                Text(district)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
             }
 
             Section("判断") {
@@ -135,6 +167,21 @@ struct LogEditorView: View {
                 appendPhoto(data: imageData)
             }
         }
+        .sheet(isPresented: $showingLocationPicker) {
+            NavigationStack {
+                MapLocationPickerView(
+                    initialAddress: address,
+                    initialLatitude: latitude,
+                    initialLongitude: longitude
+                ) { location in
+                    address = location.address
+                    district = location.district
+                    latitude = location.latitude
+                    longitude = location.longitude
+                    autosave()
+                }
+            }
+        }
         .onChange(of: selectedItems) { _, items in
             loadPhotos(items)
         }
@@ -147,13 +194,14 @@ struct LogEditorView: View {
         .onChange(of: serviceRating) { _, _ in autosave() }
         .onChange(of: dishRating) { _, _ in autosave() }
         .onChange(of: dishText) { _, _ in autosave() }
+        .onChange(of: address) { _, _ in autosave() }
     }
 
     private var photoEntry: some View {
-        let photos = log?.photos ?? []
+        let photos = (log?.photos.map(\.imageData) ?? []) + pendingPhotoData
 
         return ZStack(alignment: .topTrailing) {
-            PhotoMosaicView(photos: photos, height: 230)
+            PhotoMosaicView(imageData: photos, height: 230)
                 .contentShape(RoundedRectangle(cornerRadius: 8))
                 .onTapGesture {
                     presentPrimaryPhotoInput()
@@ -188,6 +236,10 @@ struct LogEditorView: View {
             serviceRating = existingLog.serviceRating
             dishRating = existingLog.dishRating
             dishText = existingLog.recommendedDishes.sorted { $0.rank < $1.rank }.map(\.name).joined(separator: "、")
+            address = existingLog.address
+            district = existingLog.district
+            latitude = existingLog.latitude
+            longitude = existingLog.longitude
             isPitfall = existingLog.isPitfall
         } else {
             log = nil
@@ -195,7 +247,7 @@ struct LogEditorView: View {
     }
 
     private func autosave() {
-        guard hasMeaningfulInput else { return }
+        guard canPersistDraft else { return }
         let log = ensureLog()
         applyForm(to: log)
         try? modelContext.save()
@@ -203,7 +255,11 @@ struct LogEditorView: View {
 
     private func saveAndGenerate() {
         guard !shopName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            errorMessage = "先写个店名就能保存，评分、推荐菜和地址会自动补。"
+            errorMessage = "店名必填。"
+            return
+        }
+        guard !address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            errorMessage = "请先在地图上选择店铺地址。"
             return
         }
         let log = ensureLog()
@@ -223,8 +279,13 @@ struct LogEditorView: View {
         log.serviceRating = serviceRating
         log.dishRating = dishRating
         log.rating = finalRating
+        log.address = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        log.district = district
+        log.latitude = latitude
+        log.longitude = longitude
         log.isPitfall = isPitfall
         log.updatedAt = Date()
+        flushPendingPhotos(to: log)
 
         let names = dishText
             .split(whereSeparator: { "、,，".contains($0) })
@@ -275,11 +336,15 @@ struct LogEditorView: View {
     }
 
     private func appendPhoto(data: Data) {
-        let log = ensureLog()
-        let photo = FoodPhoto(imageData: data, isCover: log.photos.isEmpty)
-        log.photos.append(photo)
-        log.updatedAt = Date()
-        try? modelContext.save()
+        if canPersistDraft {
+            let log = ensureLog()
+            let photo = FoodPhoto(imageData: data, isCover: log.photos.isEmpty)
+            log.photos.append(photo)
+            log.updatedAt = Date()
+            try? modelContext.save()
+        } else {
+            pendingPhotoData.append(data)
+        }
     }
 
     private func presentPrimaryPhotoInput() {
@@ -320,11 +385,16 @@ struct LogEditorView: View {
         #endif
     }
 
-    private var hasMeaningfulInput: Bool {
-        !shopName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-        finalRating > 0 ||
-        !dishText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-        !(log?.photos.isEmpty ?? true)
+    private var canPersistDraft: Bool {
+        !shopName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func flushPendingPhotos(to log: FoodLog) {
+        guard !pendingPhotoData.isEmpty else { return }
+        for data in pendingPhotoData {
+            log.photos.append(FoodPhoto(imageData: data, isCover: log.photos.isEmpty))
+        }
+        pendingPhotoData.removeAll()
     }
 
     private func ensureLog() -> FoodLog {
@@ -338,9 +408,10 @@ struct LogEditorView: View {
     }
 
     private func closeEditor() {
-        guard let log else { return }
-        if existingLog == nil && !hasMeaningfulInput {
-            modelContext.delete(log)
+        if existingLog == nil && !canPersistDraft {
+            if let log {
+                modelContext.delete(log)
+            }
         } else {
             autosave()
         }
@@ -405,23 +476,23 @@ private struct ThumbJudgementControl: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            judgementButton(title: "推荐", systemImage: "hand.thumbsup.fill", selected: !isPitfall) {
+            judgementButton(title: "推荐", systemImage: "hand.thumbsup.fill", selected: !isPitfall, selectedColor: .leaf) {
                 isPitfall = false
             }
-            judgementButton(title: "踩雷", systemImage: "hand.thumbsdown.fill", selected: isPitfall) {
+            judgementButton(title: "踩雷", systemImage: "hand.thumbsdown.fill", selected: isPitfall, selectedColor: .tomato) {
                 isPitfall = true
             }
         }
         .padding(.vertical, 4)
     }
 
-    private func judgementButton(title: String, systemImage: String, selected: Bool, action: @escaping () -> Void) -> some View {
+    private func judgementButton(title: String, systemImage: String, selected: Bool, selectedColor: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
                 .font(.body.weight(.semibold))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
-                .background(selected ? Color.tomato : Color.secondary.opacity(0.12))
+                .background(selected ? selectedColor : Color.secondary.opacity(0.12))
                 .foregroundStyle(selected ? .white : Color.ink)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
         }

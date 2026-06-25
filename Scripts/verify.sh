@@ -25,6 +25,7 @@ swiftc -parse \
   ChiHuoDaRen/Views/PhotoMosaicView.swift \
   ChiHuoDaRen/Views/LogEditorView.swift \
   ChiHuoDaRen/Views/CameraCaptureView.swift \
+  ChiHuoDaRen/Views/MapLocationPickerView.swift \
   ChiHuoDaRen/Views/LogDetailView.swift \
   ChiHuoDaRen/Views/EatDecisionView.swift
 

@@ -20,6 +20,7 @@
 		100000000000000000000112 /* EatDecisionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000012 /* EatDecisionView.swift */; };
 		100000000000000000000113 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000013 /* Assets.xcassets */; };
 		100000000000000000000114 /* CameraCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000016 /* CameraCaptureView.swift */; };
+		100000000000000000000115 /* MapLocationPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000017 /* MapLocationPickerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +39,7 @@
 		100000000000000000000014 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		100000000000000000000015 /* ChiHuoDaRen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ChiHuoDaRen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		100000000000000000000016 /* CameraCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureView.swift; sourceTree = "<group>"; };
+		100000000000000000000017 /* MapLocationPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapLocationPickerView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +108,7 @@
 				100000000000000000000009 /* PhotoMosaicView.swift */,
 				100000000000000000000010 /* LogEditorView.swift */,
 				100000000000000000000016 /* CameraCaptureView.swift */,
+				100000000000000000000017 /* MapLocationPickerView.swift */,
 				100000000000000000000011 /* LogDetailView.swift */,
 				100000000000000000000012 /* EatDecisionView.swift */,
 			);
@@ -192,6 +195,7 @@
 				100000000000000000000109 /* PhotoMosaicView.swift in Sources */,
 				100000000000000000000110 /* LogEditorView.swift in Sources */,
 				100000000000000000000114 /* CameraCaptureView.swift in Sources */,
+				100000000000000000000115 /* MapLocationPickerView.swift in Sources */,
 				100000000000000000000111 /* LogDetailView.swift in Sources */,
 				100000000000000000000112 /* EatDecisionView.swift in Sources */,
 			);
