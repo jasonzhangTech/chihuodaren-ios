@@ -43,9 +43,10 @@ struct FoodLogCard: View {
                     .lineLimit(3)
 
                 HStack(spacing: 8) {
-                    StatusPill(text: log.revisitIntent.label, systemImage: "arrow.uturn.forward")
                     if log.isPitfall {
-                        StatusPill(text: "踩雷", systemImage: "exclamationmark.triangle")
+                        StatusPill(text: "踩雷", systemImage: "hand.thumbsdown")
+                    } else {
+                        StatusPill(text: "推荐", systemImage: "hand.thumbsup")
                     }
                     if log.privacyLevel != .exact {
                         StatusPill(text: "位置保护", systemImage: "lock")

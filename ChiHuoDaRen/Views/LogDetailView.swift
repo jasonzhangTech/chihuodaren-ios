@@ -32,9 +32,10 @@ struct LogDetailView: View {
                     FlowLayout(items: log.recommendedDishes.sorted { $0.rank < $1.rank }.map(\.name))
 
                     HStack {
-                        StatusPill(text: log.revisitIntent.label, systemImage: "arrow.uturn.forward")
                         if log.isPitfall {
-                            StatusPill(text: "踩雷", systemImage: "exclamationmark.triangle")
+                            StatusPill(text: "踩雷", systemImage: "hand.thumbsdown")
+                        } else {
+                            StatusPill(text: "推荐", systemImage: "hand.thumbsup")
                         }
                         StatusPill(text: log.privacyLevel.label, systemImage: "lock")
                     }
@@ -90,18 +91,6 @@ struct LogDetailView: View {
                         Label("重新生成", systemImage: "arrow.clockwise")
                     }
                     .disabled(isRegenerating)
-                }
-
-                if !log.voiceNoteText.isEmpty || !log.userComment.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("原始口述")
-                            .font(.headline)
-                        Text(log.voiceNoteText.isEmpty ? log.userComment : log.voiceNoteText)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(12)
-                    .background(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
             .padding(16)

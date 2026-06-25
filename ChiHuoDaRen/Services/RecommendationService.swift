@@ -26,9 +26,6 @@ enum RecommendationService {
         guard let winner = sorted.first else { return nil }
 
         var reasons: [String] = []
-        if winner.revisitIntent == .yes {
-            reasons.append("你标过再去")
-        }
         if winner.finalRating > 0 {
             reasons.append("评分 \(String(format: "%.1f", winner.finalRating))")
         }
@@ -44,8 +41,6 @@ enum RecommendationService {
 
     private static func score(_ log: FoodLog) -> Double {
         var value = log.finalRating
-        if log.revisitIntent == .yes { value += 1.2 }
-        if log.revisitIntent == .no { value -= 1.4 }
         if log.isPitfall { value -= 2.0 }
         value += min(Double(log.tags.count) * 0.1, 0.5)
         return value

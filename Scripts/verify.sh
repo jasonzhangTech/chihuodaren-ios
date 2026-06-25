@@ -17,7 +17,6 @@ echo "== Swift syntax parse =="
 swiftc -parse \
   ChiHuoDaRen/App.swift \
   ChiHuoDaRen/Models/FoodModels.swift \
-  ChiHuoDaRen/Services/AutoFillService.swift \
   ChiHuoDaRen/Services/AILogService.swift \
   ChiHuoDaRen/Services/RecommendationService.swift \
   ChiHuoDaRen/Views/ContentView.swift \
@@ -25,6 +24,7 @@ swiftc -parse \
   ChiHuoDaRen/Views/FoodLogCard.swift \
   ChiHuoDaRen/Views/PhotoMosaicView.swift \
   ChiHuoDaRen/Views/LogEditorView.swift \
+  ChiHuoDaRen/Views/CameraCaptureView.swift \
   ChiHuoDaRen/Views/LogDetailView.swift \
   ChiHuoDaRen/Views/EatDecisionView.swift
 

@@ -8,7 +8,7 @@ struct LogListView: View {
     @State private var selectedFilter = "全部"
     @State private var showingNewLog = false
 
-    private let filters = ["全部", "再去", "踩雷", "夜宵", "独食", "朋友聚餐"]
+    private let filters = ["全部", "踩雷", "夜宵", "独食", "朋友聚餐"]
 
     var filteredLogs: [FoodLog] {
         logs.filter { log in
@@ -22,8 +22,6 @@ struct LogListView: View {
             switch selectedFilter {
             case "全部":
                 filterMatches = true
-            case "再去":
-                filterMatches = log.revisitIntent == .yes
             case "踩雷":
                 filterMatches = log.isPitfall
             default:

@@ -83,7 +83,7 @@ struct EatDecisionView: View {
                             .foregroundStyle(Color.tomato)
                         Text("还没有匹配记录")
                             .font(.headline)
-                        Text("多记几家后，这里会按评分、再去意愿和标签帮你挑。")
+                        Text("多记几家后，这里会按评分、踩雷标记和标签帮你挑。")
                             .font(.body)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)

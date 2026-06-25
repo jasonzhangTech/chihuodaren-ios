@@ -17,20 +17,6 @@ enum AIStatus: String, Codable, CaseIterable {
     case edited
 }
 
-enum RevisitIntent: String, Codable, CaseIterable {
-    case yes
-    case maybe
-    case no
-
-    var label: String {
-        switch self {
-        case .yes: "再去"
-        case .maybe: "待定"
-        case .no: "不再去"
-        }
-    }
-}
-
 enum PrivacyLevel: String, Codable, CaseIterable {
     case hiddenExact
     case districtOnly
@@ -91,13 +77,10 @@ final class FoodLog {
     var dishRating: Double = 0
     @Relationship(deleteRule: .cascade) var recommendedDishes: [Dish]
     @Relationship(deleteRule: .cascade) var photos: [FoodPhoto]
-    var voiceNoteText: String
-    var userComment: String
     var aiTitle: String
     var aiBody: String
     var aiStatusRaw: String
     var tags: [String]
-    var revisitIntentRaw: String
     var isPitfall: Bool
     var privacyLevelRaw: String
     var district: String
@@ -124,13 +107,10 @@ final class FoodLog {
         self.dishRating = rating
         self.recommendedDishes = recommendedDishes
         self.photos = photos
-        self.voiceNoteText = ""
-        self.userComment = ""
         self.aiTitle = ""
         self.aiBody = ""
         self.aiStatusRaw = AIStatus.pending.rawValue
         self.tags = []
-        self.revisitIntentRaw = RevisitIntent.maybe.rawValue
         self.isPitfall = false
         self.privacyLevelRaw = PrivacyLevel.hiddenExact.rawValue
         self.district = ""
@@ -147,11 +127,6 @@ final class FoodLog {
     var aiStatus: AIStatus {
         get { AIStatus(rawValue: aiStatusRaw) ?? .pending }
         set { aiStatusRaw = newValue.rawValue }
-    }
-
-    var revisitIntent: RevisitIntent {
-        get { RevisitIntent(rawValue: revisitIntentRaw) ?? .maybe }
-        set { revisitIntentRaw = newValue.rawValue }
     }
 
     var privacyLevel: PrivacyLevel {

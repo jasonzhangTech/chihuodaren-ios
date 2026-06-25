@@ -1,11 +1,5 @@
 import Foundation
 
-enum RevisitIntent: String {
-    case yes
-    case maybe
-    case no
-}
-
 struct Dish {
     var name: String
     var rank: Int
@@ -20,11 +14,9 @@ struct FoodLog {
     var rating: Double
     var recommendedDishes: [Dish]
     var photoCount: Int
-    var voiceNoteText: String
     var aiTitle: String
     var aiBody: String
     var tags: [String]
-    var revisitIntent: RevisitIntent
     var isPitfall: Bool
     var district: String
 
@@ -44,13 +36,6 @@ struct FoodLog {
     }
 }
 
-struct ShopSuggestion {
-    let dishes: [String]
-    let foodType: String
-    let district: String
-    let tags: [String]
-}
-
 func inferFoodType(from text: String) -> String {
     if text.contains("粉") || text.contains("面") { return "粉面" }
     if text.contains("烧烤") || text.contains("串") { return "烧烤" }
@@ -60,33 +45,15 @@ func inferFoodType(from text: String) -> String {
     return "小吃"
 }
 
-func suggest(shopName: String, foodType: String) -> ShopSuggestion {
-    let normalized = "\(shopName) \(foodType)"
-    if normalized.contains("粉") || normalized.contains("面") {
-        return ShopSuggestion(
-            dishes: ["招牌牛肉粉", "卤蛋", "酸萝卜"],
-            foodType: "粉面",
-            district: "老城小巷",
-            tags: ["独食", "夜宵", "锅气足"]
-        )
-    }
-
-    return ShopSuggestion(
-        dishes: ["店员推荐", "招牌菜", "当日小食"],
-        foodType: "小吃",
-        district: "附近街区",
-        tags: ["探店", "可再试"]
-    )
-}
-
 func generateAI(for log: FoodLog) -> (title: String, body: String) {
     let dishText = log.recommendedDishes
         .sorted { $0.rank < $1.rank }
         .map(\.name)
         .prefix(3)
         .joined(separator: "、")
-    let title = "\(log.shopName)再吃备忘"
-    let body = "\(log.district)的\(log.shopName)可以记进\(log.foodType)清单。推荐先点\(dishText)，综合评分 \(String(format: "%.1f", log.finalRating))。\(log.voiceNoteText)适合下次不知道吃什么时回来兜底。"
+    let title = log.isPitfall ? "\(log.shopName)避雷备忘" : "\(log.shopName)再吃备忘"
+    let tail = log.isPitfall ? "这次标为踩雷，下次先避开。" : "适合下次不知道吃什么时回来兜底。"
+    let body = "\(log.district)的\(log.shopName)可以记进\(log.foodType)清单。推荐先点\(dishText)，综合评分 \(String(format: "%.1f", log.finalRating))。\(tail)"
 
     return (String(title.prefix(18)), String(body.prefix(120)))
 }
@@ -100,8 +67,8 @@ func recommend(from logs: [FoodLog], type: String, scene: String, excludesPitfal
             return typeMatches && sceneMatches && pitfallMatches
         }
         .sorted { lhs, rhs in
-            let left = lhs.finalRating + (lhs.revisitIntent == .yes ? 1.2 : 0) - (lhs.isPitfall ? 2.0 : 0)
-            let right = rhs.finalRating + (rhs.revisitIntent == .yes ? 1.2 : 0) - (rhs.isPitfall ? 2.0 : 0)
+            let left = lhs.finalRating - (lhs.isPitfall ? 2.0 : 0)
+            let right = rhs.finalRating - (rhs.isPitfall ? 2.0 : 0)
             return left > right
         }
         .first
@@ -114,24 +81,21 @@ var log = FoodLog(
     serviceRating: 4.0,
     dishRating: 5.0,
     rating: 0,
-    recommendedDishes: [],
+    recommendedDishes: [
+        Dish(name: "招牌牛肉粉", rank: 0),
+        Dish(name: "卤蛋", rank: 1),
+        Dish(name: "酸萝卜", rank: 2)
+    ],
     photoCount: 1,
-    voiceNoteText: "汤底清爽，辣油后劲明显。",
     aiTitle: "",
     aiBody: "",
-    tags: [],
-    revisitIntent: .yes,
+    tags: ["独食", "夜宵"],
     isPitfall: false,
-    district: ""
+    district: "老城小巷"
 )
 
 log.foodType = inferFoodType(from: log.shopName)
 log.rating = log.finalRating
-
-let suggestion = suggest(shopName: log.shopName, foodType: log.foodType)
-log.recommendedDishes = suggestion.dishes.enumerated().map { Dish(name: $0.element, rank: $0.offset) }
-log.district = suggestion.district
-log.tags = suggestion.tags
 
 let ai = generateAI(for: log)
 log.aiTitle = ai.title

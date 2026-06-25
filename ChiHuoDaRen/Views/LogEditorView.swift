@@ -21,11 +21,7 @@ struct LogEditorView: View {
     @State private var serviceRating = 0.0
     @State private var dishRating = 0.0
     @State private var dishText = ""
-    @State private var voiceNoteText = ""
-    @State private var userComment = ""
-    @State private var revisitIntent = RevisitIntent.maybe
     @State private var isPitfall = false
-    @State private var isAutoFilling = false
     @State private var isGenerating = false
     @State private var errorMessage: String?
 
@@ -46,7 +42,6 @@ struct LogEditorView: View {
             Section("店铺") {
                 TextField("店名，其他信息可自动补", text: $shopName)
                     .textInputAutocapitalization(.never)
-                    .onSubmit { autofill() }
 
                 Picker("美食类型", selection: $foodType) {
                     ForEach(foodTypes, id: \.self) { type in
@@ -67,30 +62,11 @@ struct LogEditorView: View {
                     }
                 }
 
-                TextField("推荐菜，自动补齐后可改", text: $dishText)
-
-                Button {
-                    autofill()
-                } label: {
-                    Label(isAutoFilling ? "正在补全" : "自动带入评分和推荐菜", systemImage: "wand.and.stars")
-                }
-                .disabled(shopName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isAutoFilling)
-            }
-
-            Section("一句口述") {
-                TextField("这家最惊喜或最踩雷的是？", text: $voiceNoteText, axis: .vertical)
-                    .lineLimit(3...5)
-                TextField("补充点评，可选", text: $userComment, axis: .vertical)
-                    .lineLimit(2...4)
+                TextField("推荐菜，可选，用顿号分隔", text: $dishText)
             }
 
             Section("判断") {
-                Picker("下次还去吗", selection: $revisitIntent) {
-                    ForEach(RevisitIntent.allCases, id: \.self) { intent in
-                        Text(intent.label).tag(intent)
-                    }
-                }
-                Toggle("这家踩雷", isOn: $isPitfall)
+                ThumbJudgementControl(isPitfall: $isPitfall)
             }
 
             if let log, !log.aiBody.isEmpty || isGenerating {
@@ -171,8 +147,6 @@ struct LogEditorView: View {
         .onChange(of: serviceRating) { _, _ in autosave() }
         .onChange(of: dishRating) { _, _ in autosave() }
         .onChange(of: dishText) { _, _ in autosave() }
-        .onChange(of: voiceNoteText) { _, _ in autosave() }
-        .onChange(of: userComment) { _, _ in autosave() }
     }
 
     private var photoEntry: some View {
@@ -214,9 +188,6 @@ struct LogEditorView: View {
             serviceRating = existingLog.serviceRating
             dishRating = existingLog.dishRating
             dishText = existingLog.recommendedDishes.sorted { $0.rank < $1.rank }.map(\.name).joined(separator: "、")
-            voiceNoteText = existingLog.voiceNoteText
-            userComment = existingLog.userComment
-            revisitIntent = existingLog.revisitIntent
             isPitfall = existingLog.isPitfall
         } else {
             log = nil
@@ -241,18 +212,8 @@ struct LogEditorView: View {
         log.updatedAt = Date()
         try? modelContext.save()
 
-        if validateForAI(log) {
-            generateAI(for: log)
-            dismiss()
-        } else {
-            Task {
-                await autofillBeforeGenerating(log)
-                await MainActor.run {
-                    generateAI(for: log)
-                    dismiss()
-                }
-            }
-        }
+        generateAI(for: log)
+        dismiss()
     }
 
     private func applyForm(to log: FoodLog) {
@@ -262,9 +223,6 @@ struct LogEditorView: View {
         log.serviceRating = serviceRating
         log.dishRating = dishRating
         log.rating = finalRating
-        log.voiceNoteText = voiceNoteText
-        log.userComment = userComment
-        log.revisitIntent = revisitIntent
         log.isPitfall = isPitfall
         log.updatedAt = Date()
 
@@ -277,33 +235,6 @@ struct LogEditorView: View {
             log.recommendedDishes.removeAll()
             for (index, name) in names.prefix(6).enumerated() {
                 log.recommendedDishes.append(Dish(name: name, source: "manual", rank: index))
-            }
-        }
-    }
-
-    private func validateForAI(_ log: FoodLog) -> Bool {
-        !log.shopName.isEmpty
-    }
-
-    private func autofill() {
-        guard !shopName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        isAutoFilling = true
-        Task {
-            let suggestion = await AutoFillService.suggest(for: shopName, foodType: foodType)
-            await MainActor.run {
-                if foodType == "自动识别" {
-                    foodType = suggestion.foodType
-                }
-                dishText = suggestion.dishes.joined(separator: "、")
-                let log = ensureLog()
-                log.district = suggestion.district
-                log.address = suggestion.address
-                log.latitude = suggestion.latitude
-                log.longitude = suggestion.longitude
-                log.tags = suggestion.tags
-                applyForm(to: log)
-                try? modelContext.save()
-                isAutoFilling = false
             }
         }
     }
@@ -391,8 +322,6 @@ struct LogEditorView: View {
 
     private var hasMeaningfulInput: Bool {
         !shopName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-        !voiceNoteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-        !userComment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
         finalRating > 0 ||
         !dishText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
         !(log?.photos.isEmpty ?? true)
@@ -424,29 +353,6 @@ struct LogEditorView: View {
             try? modelContext.save()
         }
         dismiss()
-    }
-
-    private func autofillBeforeGenerating(_ log: FoodLog) async {
-        let suggestion = await AutoFillService.suggest(for: log.shopName, foodType: log.foodType)
-        await MainActor.run {
-            if log.foodType.isEmpty || log.foodType == "自动识别" {
-                log.foodType = suggestion.foodType
-                foodType = suggestion.foodType
-            }
-            if log.recommendedDishes.isEmpty {
-                for (index, name) in suggestion.dishes.enumerated() {
-                    log.recommendedDishes.append(Dish(name: name, source: "auto", rank: index))
-                }
-                dishText = suggestion.dishes.joined(separator: "、")
-            }
-            log.district = suggestion.district
-            log.address = suggestion.address
-            log.latitude = suggestion.latitude
-            log.longitude = suggestion.longitude
-            log.tags = suggestion.tags
-            log.updatedAt = Date()
-            try? modelContext.save()
-        }
     }
 
     private func inferFoodType(from text: String) -> String {
@@ -494,32 +400,51 @@ private struct StarRatingRow: View {
     }
 }
 
+private struct ThumbJudgementControl: View {
+    @Binding var isPitfall: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            judgementButton(title: "推荐", systemImage: "hand.thumbsup.fill", selected: !isPitfall) {
+                isPitfall = false
+            }
+            judgementButton(title: "踩雷", systemImage: "hand.thumbsdown.fill", selected: isPitfall) {
+                isPitfall = true
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func judgementButton(title: String, systemImage: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: systemImage)
+                .font(.body.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(selected ? Color.tomato : Color.secondary.opacity(0.12))
+                .foregroundStyle(selected ? .white : Color.ink)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 private struct HalfStarButton: View {
     let index: Int
     @Binding var value: Double
 
     var body: some View {
-        ZStack {
-            Image(systemName: symbolName)
-                .font(.title3)
-                .foregroundStyle(value >= Double(index) || value >= Double(index) - 0.5 ? Color.orange : Color.secondary.opacity(0.28))
-                .frame(width: 28, height: 28)
-
-            HStack(spacing: 0) {
-                Button {
-                    value = Double(index) - 0.5
-                } label: {
-                    Color.clear
-                }
-                Button {
-                    value = Double(index)
-                } label: {
-                    Color.clear
-                }
-            }
-        }
-        .frame(width: 28, height: 28)
-        .buttonStyle(.plain)
+        Image(systemName: symbolName)
+            .font(.title3)
+            .foregroundStyle(value >= Double(index) || value >= Double(index) - 0.5 ? Color.orange : Color.secondary.opacity(0.28))
+            .frame(width: 32, height: 32)
+            .contentShape(Rectangle())
+            .gesture(
+                SpatialTapGesture()
+                    .onEnded { gesture in
+                        value = gesture.location.x < 16 ? Double(index) - 0.5 : Double(index)
+                    }
+            )
         .accessibilityLabel("\(index) 星")
     }
 
