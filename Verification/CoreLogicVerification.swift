@@ -36,15 +36,6 @@ struct FoodLog {
     }
 }
 
-func inferFoodType(from text: String) -> String {
-    if text.contains("粉") || text.contains("面") { return "粉面" }
-    if text.contains("烧烤") || text.contains("串") { return "烧烤" }
-    if text.contains("火锅") { return "火锅" }
-    if text.contains("咖啡") { return "咖啡" }
-    if text.contains("甜") || text.contains("蛋糕") { return "甜品" }
-    return "小吃"
-}
-
 func generateAI(for log: FoodLog) -> (title: String, body: String) {
     let dishText = log.recommendedDishes
         .sorted { $0.rank < $1.rank }
@@ -94,7 +85,7 @@ var log = FoodLog(
     district: "老城小巷"
 )
 
-log.foodType = inferFoodType(from: log.shopName)
+log.foodType = "粉面"
 log.rating = log.finalRating
 
 let ai = generateAI(for: log)

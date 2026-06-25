@@ -22,7 +22,7 @@ struct LogDetailView: View {
                             Text(log.shopName)
                                 .font(.largeTitle.bold())
                                 .foregroundStyle(Color.ink)
-                            Text("\(log.foodType) · \(locationProvider.distanceText(to: log))")
+                            Text("类型：\(log.foodType) · \(locationProvider.distanceText(to: log))")
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -33,9 +33,9 @@ struct LogDetailView: View {
 
                     HStack {
                         if log.isPitfall {
-                            StatusPill(text: "踩雷", systemImage: "hand.thumbsdown")
+                            StatusPill(text: "踩雷", systemImage: "hand.thumbsdown", color: .leaf)
                         } else {
-                            StatusPill(text: "推荐", systemImage: "hand.thumbsup")
+                            StatusPill(text: "推荐", systemImage: "hand.thumbsup", color: .tomato)
                         }
                     }
                 }
@@ -53,7 +53,7 @@ struct LogDetailView: View {
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.borderedProminent)
-                        .tint(.leaf)
+                        .tint(.tomato)
                     }
                     .padding(12)
                     .background(.white)
@@ -64,6 +64,7 @@ struct LogDetailView: View {
             .padding(.bottom, 110)
         }
         .background(Color.paper)
+        .tint(.tomato)
         .navigationTitle("详情")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {

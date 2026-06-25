@@ -62,9 +62,9 @@ struct FoodLogCard: View {
 
                 HStack(spacing: 8) {
                     if log.isPitfall {
-                        StatusPill(text: "踩雷", systemImage: "hand.thumbsdown")
+                        StatusPill(text: "踩雷", systemImage: "hand.thumbsdown", color: .leaf)
                     } else {
-                        StatusPill(text: "推荐", systemImage: "hand.thumbsup")
+                        StatusPill(text: "推荐", systemImage: "hand.thumbsup", color: .tomato)
                     }
                     Spacer()
                 }
@@ -100,14 +100,14 @@ struct RatingBadge: View {
         HStack(spacing: 4) {
             Image(systemName: "star.fill")
                 .font(.caption)
-                .foregroundStyle(Color.orange)
+                .foregroundStyle(.white)
             Text(value > 0 ? String(format: "%.1f", value) : "--")
                 .font(.caption.weight(.bold).monospacedDigit())
                 .foregroundStyle(.white)
         }
         .padding(.horizontal, 9)
         .padding(.vertical, 7)
-        .background(Color.ink)
+        .background(Color.tomato)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
@@ -115,11 +115,12 @@ struct RatingBadge: View {
 struct StatusPill: View {
     let text: String
     let systemImage: String
+    var color: Color = .secondary
 
     var body: some View {
         Label(text, systemImage: systemImage)
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(color)
             .labelStyle(.titleAndIcon)
     }
 }

@@ -9,7 +9,7 @@ struct EatDecisionView: View {
     @State private var excludesPitfalls = true
     @State private var recommendation: FoodRecommendation?
 
-    private let types = ["不限", "粉面", "烧烤", "火锅", "咖啡", "甜品", "小吃", "正餐"]
+    private let types = ["不限", "火锅", "烧烤", "烤肉", "正餐", "小吃", "咖啡", "甜品", "粉面", "其他"]
     private let scenes = ["不限", "独食", "朋友聚餐", "夜宵", "约会", "下午茶"]
 
     var body: some View {

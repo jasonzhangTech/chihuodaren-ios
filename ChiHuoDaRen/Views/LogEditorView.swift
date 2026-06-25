@@ -17,7 +17,7 @@ struct LogEditorView: View {
     @State private var isCameraPresented = false
     @State private var isPhotoSourceDialogPresented = false
     @State private var shopName = ""
-    @State private var foodType = "自动识别"
+    @State private var foodType = "其他"
     @State private var environmentRating = 0.0
     @State private var serviceRating = 0.0
     @State private var dishRating = 0.0
@@ -31,7 +31,7 @@ struct LogEditorView: View {
     @State private var errorMessage: String?
     @State private var showingLocationPicker = false
 
-    private let foodTypes = ["自动识别", "粉面", "烧烤", "火锅", "咖啡", "甜品", "小吃", "正餐", "其他"]
+    private let foodTypes = ["火锅", "烧烤", "烤肉", "正餐", "小吃", "咖啡", "甜品", "粉面", "其他"]
 
     init(log: FoodLog?) {
         self.existingLog = log
@@ -46,14 +46,10 @@ struct LogEditorView: View {
             }
 
             Section("店铺") {
-                TextField("店名，其他信息可自动补", text: $shopName)
+                TextField("店名", text: $shopName)
                     .chineseTextInput()
 
-                Picker("美食类型", selection: $foodType) {
-                    ForEach(foodTypes, id: \.self) { type in
-                        Text(type).tag(type)
-                    }
-                }
+                TypeSelectionGrid(types: foodTypes, selection: $foodType)
 
                 VStack(alignment: .leading, spacing: 12) {
                     StarRatingRow(title: "环境", value: $environmentRating)
@@ -98,7 +94,7 @@ struct LogEditorView: View {
                 .buttonStyle(.plain)
             }
 
-            Section("判断") {
+            Section("评价") {
                 ThumbJudgementControl(isPitfall: $isPitfall)
             }
 
@@ -166,16 +162,14 @@ struct LogEditorView: View {
         .onChange(of: selectedItems) { _, items in
             loadPhotos(items)
         }
-        .onChange(of: shopName) { _, _ in
-            inferDefaultFoodTypeIfNeeded()
-            autosave()
-        }
+        .onChange(of: shopName) { _, _ in autosave() }
         .onChange(of: foodType) { _, _ in autosave() }
         .onChange(of: environmentRating) { _, _ in autosave() }
         .onChange(of: serviceRating) { _, _ in autosave() }
         .onChange(of: dishRating) { _, _ in autosave() }
         .onChange(of: dishText) { _, _ in autosave() }
         .onChange(of: address) { _, _ in autosave() }
+        .tint(.tomato)
     }
 
     private var photoEntry: some View {
@@ -212,7 +206,7 @@ struct LogEditorView: View {
         if let existingLog {
             log = existingLog
             shopName = existingLog.shopName
-            foodType = existingLog.foodType.isEmpty ? "自动识别" : existingLog.foodType
+            foodType = foodTypes.contains(existingLog.foodType) ? existingLog.foodType : "其他"
             environmentRating = existingLog.environmentRating
             serviceRating = existingLog.serviceRating
             dishRating = existingLog.dishRating
@@ -255,7 +249,7 @@ struct LogEditorView: View {
 
     private func applyForm(to log: FoodLog) {
         log.shopName = shopName.trimmingCharacters(in: .whitespacesAndNewlines)
-        log.foodType = foodType == "自动识别" ? inferFoodType(from: shopName) : foodType
+        log.foodType = foodType
         log.environmentRating = environmentRating
         log.serviceRating = serviceRating
         log.dishRating = dishRating
@@ -382,7 +376,7 @@ struct LogEditorView: View {
         if let log {
             return log
         }
-        let newLog = FoodLog(foodType: foodType == "自动识别" ? "" : foodType)
+        let newLog = FoodLog(foodType: foodType)
         modelContext.insert(newLog)
         log = newLog
         return newLog
@@ -407,26 +401,46 @@ struct LogEditorView: View {
         dismiss()
     }
 
-    private func inferFoodType(from text: String) -> String {
-        if text.contains("粉") || text.contains("面") { return "粉面" }
-        if text.contains("烧烤") || text.contains("串") { return "烧烤" }
-        if text.contains("火锅") { return "火锅" }
-        if text.contains("咖啡") { return "咖啡" }
-        if text.contains("甜") || text.contains("蛋糕") { return "甜品" }
-        return "小吃"
-    }
-
     private var finalRating: Double {
         let parts = [environmentRating, serviceRating, dishRating].filter { $0 > 0 }
         guard !parts.isEmpty else { return 0 }
         return parts.reduce(0, +) / Double(parts.count)
     }
+}
 
-    private func inferDefaultFoodTypeIfNeeded() {
-        guard foodType == "自动识别" || foodType.isEmpty else { return }
-        let trimmed = shopName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        foodType = inferFoodType(from: trimmed)
+private struct TypeSelectionGrid: View {
+    let types: [String]
+    @Binding var selection: String
+
+    private let columns = [
+        GridItem(.flexible(), spacing: 8),
+        GridItem(.flexible(), spacing: 8),
+        GridItem(.flexible(), spacing: 8)
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("类型")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.ink)
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
+                ForEach(types, id: \.self) { type in
+                    Button {
+                        selection = type
+                    } label: {
+                        Text(type)
+                            .font(.subheadline.weight(.medium))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 9)
+                            .background(selection == type ? Color.tomato : Color.secondary.opacity(0.12))
+                            .foregroundStyle(selection == type ? .white : Color.ink)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(.vertical, 4)
     }
 }
 
@@ -457,10 +471,10 @@ private struct ThumbJudgementControl: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            judgementButton(title: "推荐", systemImage: "hand.thumbsup.fill", selected: !isPitfall, selectedColor: .leaf) {
+            judgementButton(title: "推荐", systemImage: "hand.thumbsup.fill", selected: !isPitfall, selectedColor: .tomato) {
                 isPitfall = false
             }
-            judgementButton(title: "踩雷", systemImage: "hand.thumbsdown.fill", selected: isPitfall, selectedColor: .tomato) {
+            judgementButton(title: "踩雷", systemImage: "hand.thumbsdown.fill", selected: isPitfall, selectedColor: .leaf) {
                 isPitfall = true
             }
         }
@@ -488,7 +502,7 @@ private struct HalfStarButton: View {
     var body: some View {
         Image(systemName: symbolName)
             .font(.title3)
-            .foregroundStyle(value >= Double(index) || value >= Double(index) - 0.5 ? Color.orange : Color.secondary.opacity(0.28))
+            .foregroundStyle(value >= Double(index) || value >= Double(index) - 0.5 ? Color.tomato : Color.secondary.opacity(0.28))
             .frame(width: 32, height: 32)
             .contentShape(Rectangle())
             .gesture(

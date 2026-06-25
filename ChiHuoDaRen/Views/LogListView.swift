@@ -13,7 +13,7 @@ struct LogListView: View {
         let foodTypes = logs
             .map(\.foodType)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty && $0 != "自动识别" }
+            .filter { !$0.isEmpty }
         let tags = logs
             .flatMap(\.tags)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -144,7 +144,7 @@ struct LogListView: View {
                             .font(.subheadline.weight(.medium))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(selectedFilter == filter ? Color.ink : .white)
+                            .background(selectedFilter == filter ? Color.tomato : .white)
                             .foregroundStyle(selectedFilter == filter ? .white : Color.ink)
                             .clipShape(Capsule())
                     }
