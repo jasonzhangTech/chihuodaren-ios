@@ -155,17 +155,14 @@ struct LogEditorView: View {
             }
         }
         .onAppear(perform: prepareLog)
-        .confirmationDialog("添加照片", isPresented: $isPhotoSourceDialogPresented, titleVisibility: .visible) {
-            Button("拍照") {
-                presentCamera()
-            }
-            .disabled(!isCameraAvailable)
-
-            Button("从相册选取") {
-                isPhotoPickerPresented = true
-            }
-
-            Button("取消", role: .cancel) {}
+        .sheet(isPresented: $isPhotoSourceDialogPresented) {
+            PhotoSourceSheet(
+                isCameraAvailable: isCameraAvailable,
+                onCamera: chooseCamera,
+                onLibrary: choosePhotoLibrary
+            )
+            .presentationDetents([.height(isCameraAvailable ? 236 : 178)])
+            .presentationDragIndicator(.visible)
         }
         .photosPicker(isPresented: $isPhotoPickerPresented, selection: $selectedItems, maxSelectionCount: 9, matching: .images)
         .sheet(isPresented: $isCameraPresented) {
@@ -369,6 +366,20 @@ struct LogEditorView: View {
         isPhotoSourceDialogPresented = true
     }
 
+    private func chooseCamera() {
+        isPhotoSourceDialogPresented = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+            presentCamera()
+        }
+    }
+
+    private func choosePhotoLibrary() {
+        isPhotoSourceDialogPresented = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+            isPhotoPickerPresented = true
+        }
+    }
+
     private func presentCamera() {
         #if canImport(UIKit)
         if UIImagePickerController.isSourceTypeAvailable(.camera) {
@@ -465,5 +476,61 @@ struct LogEditorView: View {
         if text.contains("咖啡") { return "咖啡" }
         if text.contains("甜") || text.contains("蛋糕") { return "甜品" }
         return "小吃"
+    }
+}
+
+private struct PhotoSourceSheet: View {
+    let isCameraAvailable: Bool
+    let onCamera: () -> Void
+    let onLibrary: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Capsule()
+                .fill(Color.secondary.opacity(0.28))
+                .frame(width: 36, height: 5)
+                .padding(.top, 10)
+                .padding(.bottom, 14)
+
+            Text("添加照片")
+                .font(.headline.weight(.semibold))
+                .padding(.bottom, 10)
+
+            VStack(spacing: 0) {
+                if isCameraAvailable {
+                    Button(action: onCamera) {
+                        Label("拍照", systemImage: "camera.fill")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(PhotoSourceButtonStyle())
+
+                    Divider()
+                        .padding(.leading, 52)
+                }
+
+                Button(action: onLibrary) {
+                    Label("从相册选取", systemImage: "photo.on.rectangle.angled")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(PhotoSourceButtonStyle())
+            }
+            .background(Color(.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(.horizontal, 20)
+
+            Spacer(minLength: 0)
+        }
+        .background(Color(.systemGroupedBackground))
+    }
+}
+
+private struct PhotoSourceButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.medium))
+            .foregroundStyle(Color.ink)
+            .padding(.horizontal, 18)
+            .frame(height: 56)
+            .background(configuration.isPressed ? Color.black.opacity(0.06) : Color.clear)
     }
 }
