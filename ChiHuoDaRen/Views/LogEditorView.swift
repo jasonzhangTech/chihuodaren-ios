@@ -1,6 +1,9 @@
 import PhotosUI
 import SwiftData
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct LogEditorView: View {
     @Environment(\.dismiss) private var dismiss
@@ -9,6 +12,8 @@ struct LogEditorView: View {
     let existingLog: FoodLog?
     @State private var log: FoodLog?
     @State private var selectedItems: [PhotosPickerItem] = []
+    @State private var isPhotoPickerPresented = false
+    @State private var isCameraPresented = false
     @State private var shopName = ""
     @State private var foodType = "自动识别"
     @State private var rating = 0.0
@@ -32,19 +37,9 @@ struct LogEditorView: View {
     var body: some View {
         Form {
             Section {
-                if let log {
-                    PhotoMosaicView(photos: log.photos, height: 210)
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
-                } else {
-                    PhotoMosaicView(photos: [], height: 210)
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
-                }
-
-                PhotosPicker(selection: $selectedItems, maxSelectionCount: 6, matching: .images) {
-                    Label("添加照片", systemImage: "photo.badge.plus")
-                }
+                photoEntry
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
             }
 
             Section("店铺") {
@@ -159,6 +154,12 @@ struct LogEditorView: View {
             }
         }
         .onAppear(perform: prepareLog)
+        .photosPicker(isPresented: $isPhotoPickerPresented, selection: $selectedItems, maxSelectionCount: 9, matching: .images)
+        .sheet(isPresented: $isCameraPresented) {
+            CameraCaptureView { imageData in
+                appendPhoto(data: imageData)
+            }
+        }
         .onChange(of: selectedItems) { _, items in
             loadPhotos(items)
         }
@@ -168,6 +169,35 @@ struct LogEditorView: View {
         .onChange(of: dishText) { _, _ in autosave() }
         .onChange(of: voiceNoteText) { _, _ in autosave() }
         .onChange(of: userComment) { _, _ in autosave() }
+    }
+
+    private var photoEntry: some View {
+        let photos = log?.photos ?? []
+
+        return ZStack(alignment: .topTrailing) {
+            PhotoMosaicView(photos: photos, height: 230)
+                .contentShape(RoundedRectangle(cornerRadius: 8))
+                .onTapGesture {
+                    presentPrimaryPhotoInput()
+                }
+
+            if !photos.isEmpty {
+                Button {
+                    presentPrimaryPhotoInput()
+                } label: {
+                    Image(systemName: "camera.fill")
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                        .background(Color.tomato)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("追加照片")
+                .padding(12)
+            }
+        }
     }
 
     private func prepareLog() {
@@ -304,11 +334,7 @@ struct LogEditorView: View {
             for item in items {
                 if let data = try? await item.loadTransferable(type: Data.self) {
                     await MainActor.run {
-                        let log = ensureLog()
-                        let photo = FoodPhoto(imageData: data, isCover: log.photos.isEmpty)
-                        log.photos.append(photo)
-                        log.updatedAt = Date()
-                        try? modelContext.save()
+                        appendPhoto(data: data)
                     }
                 }
             }
@@ -316,6 +342,26 @@ struct LogEditorView: View {
                 selectedItems = []
             }
         }
+    }
+
+    private func appendPhoto(data: Data) {
+        let log = ensureLog()
+        let photo = FoodPhoto(imageData: data, isCover: log.photos.isEmpty)
+        log.photos.append(photo)
+        log.updatedAt = Date()
+        try? modelContext.save()
+    }
+
+    private func presentPrimaryPhotoInput() {
+        #if canImport(UIKit)
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            isCameraPresented = true
+        } else {
+            isPhotoPickerPresented = true
+        }
+        #else
+        isPhotoPickerPresented = true
+        #endif
     }
 
     private var hasMeaningfulInput: Bool {
