@@ -20,7 +20,7 @@ struct FoodLogCard: View {
                             .lineLimit(1)
                     }
                     Spacer()
-                    RatingBadge(rating: log.rating, source: log.ratingSource.label)
+                    DualRatingBadge(dianpingRating: log.dianpingRating, amapRating: log.amapRating, fallbackRating: log.rating)
                 }
 
                 if !log.recommendedDishes.isEmpty {
@@ -62,22 +62,39 @@ struct FoodLogCard: View {
     }
 }
 
-struct RatingBadge: View {
-    let rating: Double
-    let source: String
+struct DualRatingBadge: View {
+    let dianpingRating: Double?
+    let amapRating: Double?
+    let fallbackRating: Double
 
     var body: some View {
-        VStack(spacing: 2) {
-            Text(rating > 0 ? String(format: "%.1f", rating) : "--")
-                .font(.headline.monospacedDigit())
-            Text(source)
-                .font(.caption2)
+        VStack(alignment: .trailing, spacing: 5) {
+            RatingLine(title: "点评", value: dianpingRating)
+            RatingLine(title: "高德", value: amapRating)
+            if dianpingRating == nil && amapRating == nil && fallbackRating > 0 {
+                RatingLine(title: "手动", value: fallbackRating)
+            }
         }
-        .foregroundStyle(.white)
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 9)
         .padding(.vertical, 7)
-        .background(Color.tomato)
+        .background(Color.ink)
         .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+struct RatingLine: View {
+    let title: String
+    let value: Double?
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.76))
+            Text(value.map { String(format: "%.1f", $0) } ?? "--")
+                .font(.caption.weight(.bold).monospacedDigit())
+                .foregroundStyle(.white)
+        }
     }
 }
 
@@ -92,4 +109,3 @@ struct StatusPill: View {
             .labelStyle(.titleAndIcon)
     }
 }
-

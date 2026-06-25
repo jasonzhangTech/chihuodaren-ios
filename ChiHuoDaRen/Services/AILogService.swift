@@ -14,9 +14,11 @@ enum AILogService {
         let note = log.voiceNoteText.isEmpty ? log.userComment : log.voiceNoteText
         let pitfall = log.isPitfall ? "但这次已经标了踩雷，下次要先避开不稳的点。" : "适合下次不知道吃什么时回来兜底。"
         let title = log.isPitfall ? "\(log.shopName)避雷备忘" : "\(log.shopName)再吃备忘"
-        let body = "\(placeText)的\(log.shopName)可以记进\(typeText)清单。推荐先点\(dishText.isEmpty ? "招牌菜" : dishText)，评分 \(String(format: "%.1f", log.rating))。\(note.isEmpty ? "整体印象偏稳，适合按心情复吃。" : note)\(pitfall)"
+        let ratingText = log.dianpingRating.map { "大众点评 \(String(format: "%.1f", $0))" }
+            ?? log.amapRating.map { "高德 \(String(format: "%.1f", $0))" }
+            ?? "评分 \(String(format: "%.1f", log.preferredRating))"
+        let body = "\(placeText)的\(log.shopName)可以记进\(typeText)清单。推荐先点\(dishText.isEmpty ? "招牌菜" : dishText)，\(ratingText)。\(note.isEmpty ? "整体印象偏稳，适合按心情复吃。" : note)\(pitfall)"
 
         return (String(title.prefix(18)), String(body.prefix(120)))
     }
 }
-

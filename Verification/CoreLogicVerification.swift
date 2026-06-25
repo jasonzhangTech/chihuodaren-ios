@@ -22,6 +22,8 @@ struct FoodLog {
     var shopName: String
     var foodType: String
     var rating: Double
+    var dianpingRating: Double?
+    var amapRating: Double?
     var ratingSource: RatingSource
     var recommendedDishes: [Dish]
     var photoCount: Int
@@ -33,10 +35,14 @@ struct FoodLog {
     var isPitfall: Bool
     var district: String
 
+    var preferredRating: Double {
+        dianpingRating ?? amapRating ?? rating
+    }
+
     var isReadyForAcceptance: Bool {
         !shopName.isEmpty &&
         !foodType.isEmpty &&
-        rating > 0 &&
+        preferredRating > 0 &&
         !recommendedDishes.isEmpty &&
         photoCount > 0 &&
         !aiBody.isEmpty
@@ -44,20 +50,26 @@ struct FoodLog {
 }
 
 struct ShopSuggestion {
-    let rating: Double
+    let dianpingRating: Double?
+    let amapRating: Double?
     let ratingSource: RatingSource
     let dishes: [String]
     let foodType: String
     let district: String
     let address: String
     let tags: [String]
+
+    var preferredRating: Double {
+        dianpingRating ?? amapRating ?? 0
+    }
 }
 
 func suggest(shopName: String, foodType: String) -> ShopSuggestion {
     let normalized = "\(shopName) \(foodType)"
     if normalized.contains("粉") || normalized.contains("面") {
         return ShopSuggestion(
-            rating: 4.7,
+            dianpingRating: 4.7,
+            amapRating: 4.6,
             ratingSource: .mixed,
             dishes: ["招牌牛肉粉", "卤蛋", "酸萝卜"],
             foodType: "粉面",
@@ -68,7 +80,8 @@ func suggest(shopName: String, foodType: String) -> ShopSuggestion {
     }
 
     return ShopSuggestion(
-        rating: 4.4,
+        dianpingRating: 4.4,
+        amapRating: 4.3,
         ratingSource: .mixed,
         dishes: ["店员推荐", "招牌菜", "当日小食"],
         foodType: "小吃",
@@ -85,7 +98,7 @@ func generateAI(for log: FoodLog) -> (title: String, body: String) {
         .prefix(3)
         .joined(separator: "、")
     let title = "\(log.shopName)再吃备忘"
-    let body = "\(log.district)的\(log.shopName)可以记进\(log.foodType)清单。推荐先点\(dishText)，评分 \(String(format: "%.1f", log.rating))。\(log.voiceNoteText)适合下次不知道吃什么时回来兜底。"
+    let body = "\(log.district)的\(log.shopName)可以记进\(log.foodType)清单。推荐先点\(dishText)，大众点评 \(String(format: "%.1f", log.dianpingRating ?? log.preferredRating))，高德 \(String(format: "%.1f", log.amapRating ?? 0))。\(log.voiceNoteText)适合下次不知道吃什么时回来兜底。"
 
     return (String(title.prefix(18)), String(body.prefix(120)))
 }
@@ -99,8 +112,8 @@ func recommend(from logs: [FoodLog], type: String, scene: String, excludesPitfal
             return typeMatches && sceneMatches && pitfallMatches
         }
         .sorted { lhs, rhs in
-            let left = lhs.rating + (lhs.revisitIntent == .yes ? 1.2 : 0) - (lhs.isPitfall ? 2.0 : 0)
-            let right = rhs.rating + (rhs.revisitIntent == .yes ? 1.2 : 0) - (rhs.isPitfall ? 2.0 : 0)
+            let left = lhs.preferredRating + (lhs.revisitIntent == .yes ? 1.2 : 0) - (lhs.isPitfall ? 2.0 : 0)
+            let right = rhs.preferredRating + (rhs.revisitIntent == .yes ? 1.2 : 0) - (rhs.isPitfall ? 2.0 : 0)
             return left > right
         }
         .first
@@ -110,6 +123,8 @@ var log = FoodLog(
     shopName: "阿婆牛肉粉",
     foodType: "粉面",
     rating: 0,
+    dianpingRating: nil,
+    amapRating: nil,
     ratingSource: .manual,
     recommendedDishes: [],
     photoCount: 1,
@@ -123,7 +138,9 @@ var log = FoodLog(
 )
 
 let suggestion = suggest(shopName: log.shopName, foodType: log.foodType)
-log.rating = suggestion.rating
+log.rating = suggestion.preferredRating
+log.dianpingRating = suggestion.dianpingRating
+log.amapRating = suggestion.amapRating
 log.ratingSource = suggestion.ratingSource
 log.recommendedDishes = suggestion.dishes.enumerated().map { Dish(name: $0.element, rank: $0.offset) }
 log.district = suggestion.district
@@ -141,6 +158,6 @@ precondition(!log.aiBody.isEmpty && log.aiBody.count <= 120, "AI body should be 
 
 print("PASS: core PRD path verified")
 let dishNames = log.recommendedDishes.map(\.name).joined(separator: "、")
-print("shop=\(log.shopName), type=\(log.foodType), rating=\(log.rating), dishes=\(dishNames), photos=\(log.photoCount)")
+print("shop=\(log.shopName), type=\(log.foodType), dianping=\(log.dianpingRating ?? 0), amap=\(log.amapRating ?? 0), dishes=\(dishNames), photos=\(log.photoCount)")
 print("aiTitle=\(log.aiTitle)")
 print("aiBody=\(log.aiBody)")

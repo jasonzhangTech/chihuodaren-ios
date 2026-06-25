@@ -12,6 +12,8 @@ struct LogEditorView: View {
     @State private var shopName = ""
     @State private var foodType = "自动识别"
     @State private var rating = 0.0
+    @State private var dianpingRating: Double?
+    @State private var amapRating: Double?
     @State private var dishText = ""
     @State private var voiceNoteText = ""
     @State private var userComment = ""
@@ -56,12 +58,28 @@ struct LogEditorView: View {
                     }
                 }
 
-                HStack {
-                    Text("评分")
-                    Slider(value: $rating, in: 0...5, step: 0.1)
-                    Text(rating > 0 ? String(format: "%.1f", rating) : "--")
-                        .font(.body.monospacedDigit())
-                        .frame(width: 42, alignment: .trailing)
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("大众点评")
+                        Spacer()
+                        Text(dianpingRating.map { String(format: "%.1f", $0) } ?? "待获取")
+                            .font(.body.monospacedDigit())
+                            .foregroundStyle(dianpingRating == nil ? .secondary : Color.ink)
+                    }
+                    HStack {
+                        Text("高德")
+                        Spacer()
+                        Text(amapRating.map { String(format: "%.1f", $0) } ?? "待获取")
+                            .font(.body.monospacedDigit())
+                            .foregroundStyle(amapRating == nil ? .secondary : Color.ink)
+                    }
+                    HStack {
+                        Text("手动兜底")
+                        Slider(value: $rating, in: 0...5, step: 0.1)
+                        Text(rating > 0 ? String(format: "%.1f", rating) : "--")
+                            .font(.body.monospacedDigit())
+                            .frame(width: 42, alignment: .trailing)
+                    }
                 }
 
                 TextField("推荐菜，自动补齐后可改", text: $dishText)
@@ -159,6 +177,8 @@ struct LogEditorView: View {
             shopName = existingLog.shopName
             foodType = existingLog.foodType.isEmpty ? "自动识别" : existingLog.foodType
             rating = existingLog.rating
+            dianpingRating = existingLog.dianpingRating
+            amapRating = existingLog.amapRating
             dishText = existingLog.recommendedDishes.sorted { $0.rank < $1.rank }.map(\.name).joined(separator: "、")
             voiceNoteText = existingLog.voiceNoteText
             userComment = existingLog.userComment
@@ -204,7 +224,9 @@ struct LogEditorView: View {
     private func applyForm(to log: FoodLog) {
         log.shopName = shopName.trimmingCharacters(in: .whitespacesAndNewlines)
         log.foodType = foodType == "自动识别" ? inferFoodType(from: shopName) : foodType
-        log.rating = rating > 0 ? rating : log.rating
+        log.rating = rating > 0 ? rating : max(max(dianpingRating ?? 0, amapRating ?? 0), log.rating)
+        log.dianpingRating = dianpingRating ?? log.dianpingRating
+        log.amapRating = amapRating ?? log.amapRating
         log.voiceNoteText = voiceNoteText
         log.userComment = userComment
         log.revisitIntent = revisitIntent
@@ -234,13 +256,17 @@ struct LogEditorView: View {
         Task {
             let suggestion = await AutoFillService.suggest(for: shopName, foodType: foodType)
             await MainActor.run {
-                rating = suggestion.rating
+                dianpingRating = suggestion.dianpingRating
+                amapRating = suggestion.amapRating
+                rating = suggestion.preferredRating
                 if foodType == "自动识别" {
                     foodType = suggestion.foodType
                 }
                 dishText = suggestion.dishes.joined(separator: "、")
                 let log = ensureLog()
                 log.ratingSource = suggestion.ratingSource
+                log.dianpingRating = suggestion.dianpingRating
+                log.amapRating = suggestion.amapRating
                 log.district = suggestion.district
                 log.address = suggestion.address
                 log.latitude = suggestion.latitude
@@ -333,9 +359,13 @@ struct LogEditorView: View {
         let suggestion = await AutoFillService.suggest(for: log.shopName, foodType: log.foodType)
         await MainActor.run {
             if log.rating <= 0 {
-                log.rating = suggestion.rating
-                rating = suggestion.rating
+                log.rating = suggestion.preferredRating
+                rating = suggestion.preferredRating
             }
+            log.dianpingRating = suggestion.dianpingRating
+            log.amapRating = suggestion.amapRating
+            dianpingRating = suggestion.dianpingRating
+            amapRating = suggestion.amapRating
             if log.foodType.isEmpty || log.foodType == "自动识别" {
                 log.foodType = suggestion.foodType
                 foodType = suggestion.foodType

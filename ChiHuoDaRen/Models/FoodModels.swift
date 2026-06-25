@@ -102,6 +102,8 @@ final class FoodLog {
     var shopName: String
     var foodType: String
     var rating: Double
+    var dianpingRating: Double?
+    var amapRating: Double?
     var ratingSourceRaw: String
     @Relationship(deleteRule: .cascade) var recommendedDishes: [Dish]
     @Relationship(deleteRule: .cascade) var photos: [FoodPhoto]
@@ -134,6 +136,8 @@ final class FoodLog {
         self.shopName = shopName
         self.foodType = foodType
         self.rating = rating
+        self.dianpingRating = ratingSource == .dianping || ratingSource == .mixed ? rating : nil
+        self.amapRating = ratingSource == .amap ? rating : nil
         self.ratingSourceRaw = ratingSource.rawValue
         self.recommendedDishes = recommendedDishes
         self.photos = photos
@@ -177,6 +181,10 @@ final class FoodLog {
         set { privacyLevelRaw = newValue.rawValue }
     }
 
+    var preferredRating: Double {
+        dianpingRating ?? amapRating ?? rating
+    }
+
     var coverPhoto: FoodPhoto? {
         photos.first(where: \.isCover) ?? photos.first
     }
@@ -195,10 +203,9 @@ final class FoodLog {
     var isReadyForPOAcceptance: Bool {
         !shopName.isEmpty &&
         !foodType.isEmpty &&
-        rating > 0 &&
+        preferredRating > 0 &&
         !recommendedDishes.isEmpty &&
         !photos.isEmpty &&
         !aiBody.isEmpty
     }
 }
-

@@ -30,6 +30,12 @@
 	<string>用于后续支持口述记录。</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>用于后续将口述转换为美食点评文字。</string>
+	<key>DIANPING_API_ENDPOINT</key>
+	<string></string>
+	<key>DIANPING_API_TOKEN</key>
+	<string></string>
+	<key>AMAP_WEB_SERVICE_KEY</key>
+	<string></string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -43,4 +49,3 @@
 	</array>
 </dict>
 </plist>
-
