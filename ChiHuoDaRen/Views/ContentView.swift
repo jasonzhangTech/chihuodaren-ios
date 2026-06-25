@@ -2,6 +2,8 @@ import SwiftData
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var locationProvider = UserLocationProvider()
+
     var body: some View {
         TabView {
             NavigationStack {
@@ -19,6 +21,7 @@ struct ContentView: View {
             }
         }
         .tint(.tomato)
+        .environmentObject(locationProvider)
     }
 }
 
@@ -29,3 +32,22 @@ extension Color {
     static let leaf = Color(red: 0.18, green: 0.45, blue: 0.32)
 }
 
+struct ChineseTextInput: ViewModifier {
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        content
+            .textInputAutocapitalization(.never)
+            .keyboardType(.default)
+            .environment(\.locale, Locale(identifier: "zh_Hans_CN"))
+        #else
+        content
+            .environment(\.locale, Locale(identifier: "zh_Hans_CN"))
+        #endif
+    }
+}
+
+extension View {
+    func chineseTextInput() -> some View {
+        modifier(ChineseTextInput())
+    }
+}

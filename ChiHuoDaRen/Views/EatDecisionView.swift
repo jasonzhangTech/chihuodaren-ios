@@ -2,6 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct EatDecisionView: View {
+    @EnvironmentObject private var locationProvider: UserLocationProvider
     @Query(sort: \FoodLog.updatedAt, order: .reverse) private var logs: [FoodLog]
     @State private var selectedType = "不限"
     @State private var selectedScene = "不限"
@@ -62,7 +63,7 @@ struct EatDecisionView: View {
                         LogDetailView(log: currentRecommendation.log)
                     } label: {
                         VStack(alignment: .leading, spacing: 12) {
-                            FoodLogCard(log: currentRecommendation.log)
+	                            FoodLogCard(log: currentRecommendation.log, distanceText: locationProvider.distanceText(to: currentRecommendation.log))
                             Label(currentRecommendation.reason, systemImage: "lightbulb")
                                 .font(.subheadline.weight(.medium))
                                 .foregroundStyle(Color.leaf)
@@ -94,9 +95,12 @@ struct EatDecisionView: View {
             }
             .padding(16)
         }
-        .background(Color.paper)
-        .navigationTitle("吃啥")
-        .navigationBarTitleDisplayMode(.inline)
+	        .background(Color.paper)
+	        .navigationTitle("吃啥")
+	        .navigationBarTitleDisplayMode(.inline)
+	        .onAppear {
+	            locationProvider.refresh()
+	        }
     }
 
     private func randomAlternative() -> FoodRecommendation? {

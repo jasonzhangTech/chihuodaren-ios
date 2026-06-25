@@ -17,20 +17,6 @@ enum AIStatus: String, Codable, CaseIterable {
     case edited
 }
 
-enum PrivacyLevel: String, Codable, CaseIterable {
-    case hiddenExact
-    case districtOnly
-    case exact
-
-    var label: String {
-        switch self {
-        case .hiddenExact: "隐藏精确位置"
-        case .districtOnly: "仅显示街区"
-        case .exact: "显示完整地址"
-        }
-    }
-}
-
 @Model
 final class Dish {
     var id: UUID
@@ -82,7 +68,6 @@ final class FoodLog {
     var aiStatusRaw: String
     var tags: [String]
     var isPitfall: Bool
-    var privacyLevelRaw: String
     var district: String
     var address: String
     var latitude: Double?
@@ -112,7 +97,6 @@ final class FoodLog {
         self.aiStatusRaw = AIStatus.pending.rawValue
         self.tags = []
         self.isPitfall = false
-        self.privacyLevelRaw = PrivacyLevel.hiddenExact.rawValue
         self.district = ""
         self.address = ""
         self.latitude = nil
@@ -129,11 +113,6 @@ final class FoodLog {
         set { aiStatusRaw = newValue.rawValue }
     }
 
-    var privacyLevel: PrivacyLevel {
-        get { PrivacyLevel(rawValue: privacyLevelRaw) ?? .hiddenExact }
-        set { privacyLevelRaw = newValue.rawValue }
-    }
-
     var finalRating: Double {
         let parts = [environmentRating, serviceRating, dishRating].filter { $0 > 0 }
         guard !parts.isEmpty else { return rating }
@@ -144,15 +123,8 @@ final class FoodLog {
         photos.first(where: \.isCover) ?? photos.first
     }
 
-    var visibleLocation: String {
-        switch privacyLevel {
-        case .hiddenExact:
-            district.isEmpty ? "位置已保护" : district
-        case .districtOnly:
-            district.isEmpty ? "未填写街区" : district
-        case .exact:
-            address.isEmpty ? (district.isEmpty ? "未填写地址" : district) : address
-        }
+    var displayAddress: String {
+        address.isEmpty ? (district.isEmpty ? "未填写地址" : district) : address
     }
 
     var isReadyForPOAcceptance: Bool {

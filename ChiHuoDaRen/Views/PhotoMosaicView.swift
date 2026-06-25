@@ -10,19 +10,22 @@ struct PhotoMosaicView: View {
     let height: CGFloat
     var maxPhotos: Int = 9
     var showsOverflowCount: Bool = true
+    var fillsWidth: Bool = false
 
-    init(photos: [FoodPhoto], height: CGFloat, maxPhotos: Int = 9, showsOverflowCount: Bool = true) {
+    init(photos: [FoodPhoto], height: CGFloat, maxPhotos: Int = 9, showsOverflowCount: Bool = true, fillsWidth: Bool = false) {
         self.imageData = photos.map(\.imageData)
         self.height = height
         self.maxPhotos = maxPhotos
         self.showsOverflowCount = showsOverflowCount
+        self.fillsWidth = fillsWidth
     }
 
-    init(imageData: [Data], height: CGFloat, maxPhotos: Int = 9, showsOverflowCount: Bool = true) {
+    init(imageData: [Data], height: CGFloat, maxPhotos: Int = 9, showsOverflowCount: Bool = true, fillsWidth: Bool = false) {
         self.imageData = imageData
         self.height = height
         self.maxPhotos = maxPhotos
         self.showsOverflowCount = showsOverflowCount
+        self.fillsWidth = fillsWidth
     }
 
     var body: some View {
@@ -49,7 +52,7 @@ struct PhotoMosaicView: View {
                     let spacing: CGFloat = 4
                     let itemWidth = (proxy.size.width - spacing * CGFloat(columns - 1)) / CGFloat(columns)
                     let itemHeight = (proxy.size.height - spacing * CGFloat(rows - 1)) / CGFloat(rows)
-                    let itemSize = max(1, min(itemWidth, itemHeight))
+                    let itemSize = max(1, fillsWidth ? itemWidth : min(itemWidth, itemHeight))
 
                     LazyVGrid(
                         columns: Array(repeating: GridItem(.fixed(itemSize), spacing: spacing), count: columns),
@@ -80,6 +83,20 @@ struct PhotoMosaicView: View {
     }
 
     private func gridColumns(for count: Int) -> Int {
+        Self.gridColumns(for: count)
+    }
+
+    static func requiredHeight(forPhotoCount count: Int, width: CGFloat, maxPhotos: Int = 9) -> CGFloat {
+        let displayCount = min(count, maxPhotos)
+        guard displayCount > 1 else { return 190 }
+        let columns = gridColumns(for: displayCount)
+        let rows = Int(ceil(Double(displayCount) / Double(columns)))
+        let spacing: CGFloat = 4
+        let itemSize = (width - spacing * CGFloat(columns - 1)) / CGFloat(columns)
+        return itemSize * CGFloat(rows) + spacing * CGFloat(rows - 1)
+    }
+
+    private static func gridColumns(for count: Int) -> Int {
         switch count {
         case 2, 4:
             return 2

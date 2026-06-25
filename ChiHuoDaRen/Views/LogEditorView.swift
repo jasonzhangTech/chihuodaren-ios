@@ -47,7 +47,7 @@ struct LogEditorView: View {
 
             Section("店铺") {
                 TextField("店名，其他信息可自动补", text: $shopName)
-                    .textInputAutocapitalization(.never)
+                    .chineseTextInput()
 
                 Picker("美食类型", selection: $foodType) {
                     ForEach(foodTypes, id: \.self) { type in
@@ -69,6 +69,7 @@ struct LogEditorView: View {
                 }
 
                 TextField("推荐菜，可选，用顿号分隔", text: $dishText)
+                    .chineseTextInput()
             }
 
             Section("地址") {
@@ -109,15 +110,16 @@ struct LogEditorView: View {
                             Text("AI 日志生成中，可先离开")
                         }
                     }
-                    TextField("AI 生成内容", text: Binding(
-                        get: { log.aiBody },
-                        set: { newValue in
+	                    TextField("AI 生成内容", text: Binding(
+	                        get: { log.aiBody },
+	                        set: { newValue in
                             log.aiBody = newValue
                             log.aiStatus = .edited
                             log.updatedAt = Date()
                         }
-                    ), axis: .vertical)
-                    .lineLimit(4...8)
+	                    ), axis: .vertical)
+	                    .chineseTextInput()
+	                    .lineLimit(4...8)
                 }
             }
 

@@ -7,6 +7,7 @@ import UIKit
 struct LogDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var locationProvider: UserLocationProvider
     @Bindable var log: FoodLog
     @State private var showingEditor = false
     @State private var isRegenerating = false
@@ -22,9 +23,9 @@ struct LogDetailView: View {
                             Text(log.shopName)
                                 .font(.largeTitle.bold())
                                 .foregroundStyle(Color.ink)
-                            Text("\(log.foodType) · \(log.visibleLocation)")
-                                .foregroundStyle(.secondary)
-                        }
+	                            Text("\(log.foodType) · \(locationProvider.distanceText(to: log))")
+	                                .foregroundStyle(.secondary)
+	                        }
                         Spacer()
                         RatingBadge(value: log.finalRating)
                     }
@@ -34,19 +35,18 @@ struct LogDetailView: View {
                     HStack {
                         if log.isPitfall {
                             StatusPill(text: "踩雷", systemImage: "hand.thumbsdown")
-                        } else {
-                            StatusPill(text: "推荐", systemImage: "hand.thumbsup")
-                        }
-                        StatusPill(text: log.privacyLevel.label, systemImage: "lock")
-                    }
-                }
+	                        } else {
+	                            StatusPill(text: "推荐", systemImage: "hand.thumbsup")
+	                        }
+	                    }
+	                }
 
                 if hasNavigationTarget {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("位置")
                             .font(.headline)
-                        Text(log.address.isEmpty ? log.visibleLocation : log.address)
-                            .foregroundStyle(.secondary)
+	                        Text(log.displayAddress)
+	                            .foregroundStyle(.secondary)
                         Button {
                             openNavigation()
                         } label: {
@@ -71,9 +71,10 @@ struct LogDetailView: View {
                         }
                     }
 
-                    TextField("AI 日志生成后会出现在这里", text: $log.aiBody, axis: .vertical)
-                        .font(.body)
-                        .lineLimit(5...12)
+	                    TextField("AI 日志生成后会出现在这里", text: $log.aiBody, axis: .vertical)
+	                        .font(.body)
+	                        .chineseTextInput()
+	                        .lineLimit(5...12)
                         .padding(12)
                         .background(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -93,11 +94,15 @@ struct LogDetailView: View {
                     .disabled(isRegenerating)
                 }
             }
-            .padding(16)
-        }
-        .background(Color.paper)
-        .navigationTitle("详情")
-        .navigationBarTitleDisplayMode(.inline)
+	            .padding(16)
+	            .padding(.bottom, 110)
+	        }
+	        .background(Color.paper)
+	        .navigationTitle("详情")
+	        .navigationBarTitleDisplayMode(.inline)
+	        .onAppear {
+	            locationProvider.refresh()
+	        }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button("删除", role: .destructive) {
@@ -131,7 +136,7 @@ struct LogDetailView: View {
                 URLQueryItem(name: "q", value: log.shopName)
             ]
         } else {
-            let destination = [log.shopName, log.address.isEmpty ? log.district : log.address]
+	            let destination = [log.shopName, log.displayAddress]
                 .filter { !$0.isEmpty }
                 .joined(separator: " ")
             components.queryItems = [

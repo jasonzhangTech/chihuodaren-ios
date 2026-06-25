@@ -81,9 +81,9 @@ struct MapLocationPickerView: View {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
-                TextField("搜索店名或地址", text: $searchText)
-                    .textInputAutocapitalization(.never)
-                    .submitLabel(.search)
+	                TextField("搜索店名或地址", text: $searchText)
+	                    .chineseTextInput()
+	                    .submitLabel(.search)
                     .onSubmit { searchPlaces() }
                 Button("搜索", action: searchPlaces)
                     .font(.body.weight(.semibold))

@@ -1,11 +1,30 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct FoodLogCard: View {
     let log: FoodLog
+    let distanceText: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            PhotoMosaicView(photos: log.photos, height: 190, maxPhotos: 6, showsOverflowCount: false)
+            GeometryReader { proxy in
+                let coverHeight = PhotoMosaicView.requiredHeight(
+                    forPhotoCount: log.photos.count,
+                    width: proxy.size.width,
+                    maxPhotos: 6
+                )
+
+                PhotoMosaicView(
+                    photos: log.photos,
+                    height: coverHeight,
+                    maxPhotos: 6,
+                    showsOverflowCount: false,
+                    fillsWidth: true
+                )
+            }
+            .frame(height: PhotoMosaicView.requiredHeight(forPhotoCount: log.photos.count, width: estimatedCardWidth, maxPhotos: 6))
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
@@ -14,7 +33,7 @@ struct FoodLogCard: View {
                             .font(.title3.bold())
                             .foregroundStyle(Color.ink)
                             .lineLimit(1)
-                        Text("\(log.foodType.isEmpty ? "未分类" : log.foodType) · \(log.visibleLocation)")
+                        Text("\(log.foodType.isEmpty ? "未分类" : log.foodType) · \(distanceText)")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
@@ -48,9 +67,6 @@ struct FoodLogCard: View {
                     } else {
                         StatusPill(text: "推荐", systemImage: "hand.thumbsup")
                     }
-                    if log.privacyLevel != .exact {
-                        StatusPill(text: "位置保护", systemImage: "lock")
-                    }
                     Spacer()
                 }
             }
@@ -60,6 +76,14 @@ struct FoodLogCard: View {
         .background(.white)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .shadow(color: .black.opacity(0.06), radius: 12, y: 4)
+    }
+
+    private var estimatedCardWidth: CGFloat {
+        #if canImport(UIKit)
+        UIScreen.main.bounds.width - 32
+        #else
+        360
+        #endif
     }
 }
 

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct LogListView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var locationProvider: UserLocationProvider
     @Query(sort: \FoodLog.updatedAt, order: .reverse) private var logs: [FoodLog]
     @State private var searchText = ""
     @State private var selectedFilter = "全部"
@@ -45,14 +46,14 @@ struct LogListView: View {
                         emptyState
                     } else {
                         LazyVStack(spacing: 14) {
-                            ForEach(filteredLogs) { log in
-                                NavigationLink {
-                                    LogDetailView(log: log)
-                                } label: {
-                                    FoodLogCard(log: log)
-                                }
-                                .buttonStyle(.plain)
-                            }
+	                            ForEach(filteredLogs) { log in
+	                                NavigationLink {
+	                                    LogDetailView(log: log)
+	                                } label: {
+	                                    FoodLogCard(log: log, distanceText: locationProvider.distanceText(to: log))
+	                                }
+	                                .buttonStyle(.plain)
+	                            }
                         }
                     }
                 }
@@ -60,6 +61,7 @@ struct LogListView: View {
                 .padding(.bottom, 72)
             }
             .searchable(text: $searchText, prompt: "搜店名、菜名、口味")
+            .environment(\.locale, Locale(identifier: "zh_Hans_CN"))
             .navigationTitle("吃货达人")
 
             Button {
@@ -80,6 +82,9 @@ struct LogListView: View {
             NavigationStack {
                 LogEditorView(log: nil)
             }
+        }
+        .onAppear {
+            locationProvider.refresh()
         }
     }
 
