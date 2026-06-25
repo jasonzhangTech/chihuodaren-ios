@@ -14,6 +14,7 @@ struct LogEditorView: View {
     @State private var selectedItems: [PhotosPickerItem] = []
     @State private var isPhotoPickerPresented = false
     @State private var isCameraPresented = false
+    @State private var isPhotoSourceDialogPresented = false
     @State private var shopName = ""
     @State private var foodType = "自动识别"
     @State private var rating = 0.0
@@ -154,6 +155,18 @@ struct LogEditorView: View {
             }
         }
         .onAppear(perform: prepareLog)
+        .confirmationDialog("添加照片", isPresented: $isPhotoSourceDialogPresented, titleVisibility: .visible) {
+            Button("拍照") {
+                presentCamera()
+            }
+            .disabled(!isCameraAvailable)
+
+            Button("从相册选取") {
+                isPhotoPickerPresented = true
+            }
+
+            Button("取消", role: .cancel) {}
+        }
         .photosPicker(isPresented: $isPhotoPickerPresented, selection: $selectedItems, maxSelectionCount: 9, matching: .images)
         .sheet(isPresented: $isCameraPresented) {
             CameraCaptureView { imageData in
@@ -353,6 +366,10 @@ struct LogEditorView: View {
     }
 
     private func presentPrimaryPhotoInput() {
+        isPhotoSourceDialogPresented = true
+    }
+
+    private func presentCamera() {
         #if canImport(UIKit)
         if UIImagePickerController.isSourceTypeAvailable(.camera) {
             isCameraPresented = true
@@ -361,6 +378,14 @@ struct LogEditorView: View {
         }
         #else
         isPhotoPickerPresented = true
+        #endif
+    }
+
+    private var isCameraAvailable: Bool {
+        #if canImport(UIKit)
+        UIImagePickerController.isSourceTypeAvailable(.camera)
+        #else
+        false
         #endif
     }
 
