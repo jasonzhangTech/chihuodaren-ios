@@ -4,13 +4,21 @@ import SwiftUI
 struct EatDecisionView: View {
     @EnvironmentObject private var locationProvider: UserLocationProvider
     @Query(sort: \FoodLog.updatedAt, order: .reverse) private var logs: [FoodLog]
-    @State private var selectedType = "不限"
-    @State private var selectedScene = "不限"
-    @State private var excludesPitfalls = true
+    @State private var selectedFilter = "全部"
     @State private var recommendation: FoodRecommendation?
 
-    private let types = ["不限", "火锅", "烧烤", "烤肉", "正餐", "小吃", "咖啡", "甜品", "粉面", "其他"]
-    private let scenes = ["不限", "独食", "朋友聚餐", "夜宵", "约会", "下午茶"]
+    private var filters: [String] {
+        let foodTypes = logs
+            .map(\.foodType)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        let tags = logs
+            .flatMap(\.tags)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        let sourcedFilters = Array(Set(foodTypes + tags)).sorted()
+        return ["全部", "踩雷"] + sourcedFilters
+    }
 
     var body: some View {
         ScrollView {
@@ -24,28 +32,12 @@ struct EatDecisionView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 16) {
-                    Picker("类型", selection: $selectedType) {
-                        ForEach(types, id: \.self) { type in
-                            Text(type).tag(type)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-
-                    Picker("场景", selection: $selectedScene) {
-                        ForEach(scenes, id: \.self) { scene in
-                            Text(scene).tag(scene)
-                        }
-                    }
-                    .pickerStyle(.menu)
-
-                    Toggle("排除踩雷", isOn: $excludesPitfalls)
+                    filterBar
 
                     Button {
                         recommendation = RecommendationService.recommend(
                             from: logs,
-                            type: selectedType,
-                            scene: selectedScene,
-                            excludesPitfalls: excludesPitfalls
+                            filter: selectedFilter
                         )
                     } label: {
                         Label("给我推荐", systemImage: "sparkles")
@@ -97,21 +89,60 @@ struct EatDecisionView: View {
         }
 	        .background(Color.paper)
 	        .navigationTitle("吃啥")
-	        .navigationBarTitleDisplayMode(.inline)
-	        .onAppear {
-	            locationProvider.refresh()
-	        }
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            locationProvider.refresh()
+            resetMissingFilter()
+        }
+        .onChange(of: filters) { _, _ in
+            resetMissingFilter()
+        }
+    }
+
+    private var filterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(filters, id: \.self) { filter in
+                    Button {
+                        selectedFilter = filter
+                        recommendation = nil
+                    } label: {
+                        Text(filter)
+                            .font(.subheadline.weight(.medium))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(selectedFilter == filter ? Color.tomato : Color.secondary.opacity(0.12))
+                            .foregroundStyle(selectedFilter == filter ? .white : Color.ink)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
     }
 
     private func randomAlternative() -> FoodRecommendation? {
         let matches = logs.filter { log in
-            let typeMatches = selectedType == "不限" || log.foodType == selectedType || log.tags.contains(selectedType)
-            let sceneMatches = selectedScene == "不限" || log.tags.contains(selectedScene)
-            let pitfallMatches = !excludesPitfalls || !log.isPitfall
-            return typeMatches && sceneMatches && pitfallMatches && log.status != .draft
+            let filterMatches: Bool
+            switch selectedFilter {
+            case "全部":
+                filterMatches = true
+            case "踩雷":
+                filterMatches = log.isPitfall
+            default:
+                filterMatches = log.foodType == selectedFilter || log.tags.contains(selectedFilter)
+            }
+            return filterMatches && log.status != .draft
         }
 
         guard let next = matches.shuffled().first else { return nil }
         return FoodRecommendation(log: next, reason: "换了一个符合条件的本地记录")
+    }
+
+    private func resetMissingFilter() {
+        if !filters.contains(selectedFilter) {
+            selectedFilter = "全部"
+            recommendation = nil
+        }
     }
 }

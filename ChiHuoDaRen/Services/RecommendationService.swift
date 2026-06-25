@@ -6,12 +6,18 @@ struct FoodRecommendation {
 }
 
 enum RecommendationService {
-    static func recommend(from logs: [FoodLog], type: String, scene: String, excludesPitfalls: Bool) -> FoodRecommendation? {
+    static func recommend(from logs: [FoodLog], filter: String) -> FoodRecommendation? {
         let candidates = logs.filter { log in
-            let typeMatches = type == "不限" || log.foodType == type || log.tags.contains(type)
-            let sceneMatches = scene == "不限" || log.tags.contains(scene)
-            let pitfallMatches = !excludesPitfalls || !log.isPitfall
-            return typeMatches && sceneMatches && pitfallMatches && log.status != .draft
+            let filterMatches: Bool
+            switch filter {
+            case "全部":
+                filterMatches = true
+            case "踩雷":
+                filterMatches = log.isPitfall
+            default:
+                filterMatches = log.foodType == filter || log.tags.contains(filter)
+            }
+            return filterMatches && log.status != .draft
         }
 
         let sorted = candidates.sorted { lhs, rhs in
@@ -29,8 +35,14 @@ enum RecommendationService {
         if winner.finalRating > 0 {
             reasons.append("评分 \(String(format: "%.1f", winner.finalRating))")
         }
-        if !scene.isEmpty, scene != "不限", winner.tags.contains(scene) {
-            reasons.append("适合\(scene)")
+        if filter == "踩雷" {
+            reasons.append("踩雷记录")
+        } else if filter != "全部" {
+            if winner.foodType == filter {
+                reasons.append("类型是\(filter)")
+            } else if winner.tags.contains(filter) {
+                reasons.append("符合\(filter)")
+            }
         }
         if reasons.isEmpty {
             reasons.append("和当前条件最接近")

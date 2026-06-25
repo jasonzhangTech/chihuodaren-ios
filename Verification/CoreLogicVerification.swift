@@ -49,13 +49,19 @@ func generateAI(for log: FoodLog) -> (title: String, body: String) {
     return (String(title.prefix(18)), String(body.prefix(120)))
 }
 
-func recommend(from logs: [FoodLog], type: String, scene: String, excludesPitfalls: Bool) -> FoodLog? {
+func recommend(from logs: [FoodLog], filter: String) -> FoodLog? {
     logs
         .filter { log in
-            let typeMatches = type == "不限" || log.foodType == type || log.tags.contains(type)
-            let sceneMatches = scene == "不限" || log.tags.contains(scene)
-            let pitfallMatches = !excludesPitfalls || !log.isPitfall
-            return typeMatches && sceneMatches && pitfallMatches
+            let filterMatches: Bool
+            switch filter {
+            case "全部":
+                filterMatches = true
+            case "踩雷":
+                filterMatches = log.isPitfall
+            default:
+                filterMatches = log.foodType == filter || log.tags.contains(filter)
+            }
+            return filterMatches
         }
         .sorted { lhs, rhs in
             let left = lhs.finalRating - (lhs.isPitfall ? 2.0 : 0)
@@ -92,7 +98,7 @@ let ai = generateAI(for: log)
 log.aiTitle = ai.title
 log.aiBody = ai.body
 
-let recommendation = recommend(from: [log], type: "粉面", scene: "独食", excludesPitfalls: true)
+let recommendation = recommend(from: [log], filter: "粉面")
 
 precondition(log.isReadyForAcceptance, "PO acceptance path should be complete")
 precondition(log.foodType == "粉面", "Food type should be inferred from shop name")
