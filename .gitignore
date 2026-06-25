@@ -1,0 +1,11 @@
+.DS_Store
+build/
+DerivedData/
+*.xcuserdata/
+*.xcuserstate
+xcuserdata/
+.swiftpm/
+
+# Unrelated local workspace content.
+ota-keynote-miniprogram/
+
