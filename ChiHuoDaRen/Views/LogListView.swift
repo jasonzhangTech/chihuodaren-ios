@@ -14,11 +14,7 @@ struct LogListView: View {
             .map(\.foodType)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
-        let tags = logs
-            .flatMap(\.tags)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        let sourcedFilters = Array(Set(foodTypes + tags)).sorted()
+        let sourcedFilters = Array(Set(foodTypes)).sorted()
         return ["全部", "踩雷"] + sourcedFilters
     }
 
@@ -27,7 +23,6 @@ struct LogListView: View {
             let queryMatches = searchText.isEmpty ||
                 log.shopName.localizedStandardContains(searchText) ||
                 log.foodType.localizedStandardContains(searchText) ||
-                log.aiBody.localizedStandardContains(searchText) ||
                 log.recommendedDishes.contains { $0.name.localizedStandardContains(searchText) }
 
             let filterMatches: Bool
@@ -37,7 +32,7 @@ struct LogListView: View {
             case "踩雷":
                 filterMatches = log.isPitfall
             default:
-                filterMatches = log.foodType == selectedFilter || log.tags.contains(selectedFilter)
+                filterMatches = log.foodType == selectedFilter
             }
 
             return queryMatches && filterMatches

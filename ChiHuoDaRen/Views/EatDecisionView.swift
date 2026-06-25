@@ -12,11 +12,7 @@ struct EatDecisionView: View {
             .map(\.foodType)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
-        let tags = logs
-            .flatMap(\.tags)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        let sourcedFilters = Array(Set(foodTypes + tags)).sorted()
+        let sourcedFilters = Array(Set(foodTypes)).sorted()
         return ["全部", "踩雷"] + sourcedFilters
     }
 
@@ -130,7 +126,7 @@ struct EatDecisionView: View {
             case "踩雷":
                 filterMatches = log.isPitfall
             default:
-                filterMatches = log.foodType == selectedFilter || log.tags.contains(selectedFilter)
+                filterMatches = log.foodType == selectedFilter
             }
             return filterMatches && log.status != .draft
         }

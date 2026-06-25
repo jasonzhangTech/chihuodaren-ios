@@ -27,7 +27,6 @@ struct LogEditorView: View {
     @State private var latitude: Double?
     @State private var longitude: Double?
     @State private var isPitfall = false
-    @State private var isGenerating = false
     @State private var errorMessage: String?
     @State private var showingLocationPicker = false
 
@@ -123,7 +122,7 @@ struct LogEditorView: View {
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button("保存") {
-                    saveAndGenerate()
+                    saveLog()
                 }
                 .fontWeight(.semibold)
             }
@@ -228,7 +227,7 @@ struct LogEditorView: View {
         try? modelContext.save()
     }
 
-    private func saveAndGenerate() {
+    private func saveLog() {
         guard !shopName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             errorMessage = "店名必填。"
             return
@@ -242,8 +241,6 @@ struct LogEditorView: View {
         log.status = .saved
         log.updatedAt = Date()
         try? modelContext.save()
-
-        generateAI(for: log)
         dismiss()
     }
 
@@ -253,7 +250,6 @@ struct LogEditorView: View {
         log.environmentRating = environmentRating
         log.serviceRating = serviceRating
         log.dishRating = dishRating
-        log.rating = finalRating
         log.address = address.trimmingCharacters(in: .whitespacesAndNewlines)
         log.district = district
         log.latitude = latitude
@@ -270,27 +266,7 @@ struct LogEditorView: View {
         if !names.isEmpty {
             log.recommendedDishes.removeAll()
             for (index, name) in names.prefix(6).enumerated() {
-                log.recommendedDishes.append(Dish(name: name, source: "manual", rank: index))
-            }
-        }
-    }
-
-    private func generateAI(for log: FoodLog) {
-        isGenerating = true
-        log.status = .generating
-        log.aiStatus = .generating
-        try? modelContext.save()
-
-        Task {
-            let result = await AILogService.generate(for: log)
-            await MainActor.run {
-                log.aiTitle = result.title
-                log.aiBody = result.body
-                log.aiStatus = .generated
-                log.status = .generated
-                log.updatedAt = Date()
-                try? modelContext.save()
-                isGenerating = false
+                log.recommendedDishes.append(Dish(name: name, rank: index))
             }
         }
     }

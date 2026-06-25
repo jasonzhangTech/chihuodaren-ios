@@ -15,7 +15,7 @@ enum RecommendationService {
             case "踩雷":
                 filterMatches = log.isPitfall
             default:
-                filterMatches = log.foodType == filter || log.tags.contains(filter)
+                filterMatches = log.foodType == filter
             }
             return filterMatches && log.status != .draft
         }
@@ -40,8 +40,6 @@ enum RecommendationService {
         } else if filter != "全部" {
             if winner.foodType == filter {
                 reasons.append("类型是\(filter)")
-            } else if winner.tags.contains(filter) {
-                reasons.append("符合\(filter)")
             }
         }
         if reasons.isEmpty {
@@ -54,7 +52,6 @@ enum RecommendationService {
     private static func score(_ log: FoodLog) -> Double {
         var value = log.finalRating
         if log.isPitfall { value -= 2.0 }
-        value += min(Double(log.tags.count) * 0.1, 0.5)
         return value
     }
 }

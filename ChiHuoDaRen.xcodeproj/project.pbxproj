@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		100000000000000000000101 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000001 /* App.swift */; };
 		100000000000000000000102 /* FoodModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000002 /* FoodModels.swift */; };
-		100000000000000000000104 /* AILogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000004 /* AILogService.swift */; };
 		100000000000000000000105 /* RecommendationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000005 /* RecommendationService.swift */; };
 		100000000000000000000106 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000006 /* ContentView.swift */; };
 		100000000000000000000107 /* LogListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000007 /* LogListView.swift */; };
@@ -27,7 +26,6 @@
 /* Begin PBXFileReference section */
 		100000000000000000000001 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		100000000000000000000002 /* FoodModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodModels.swift; sourceTree = "<group>"; };
-		100000000000000000000004 /* AILogService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AILogService.swift; sourceTree = "<group>"; };
 		100000000000000000000005 /* RecommendationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendationService.swift; sourceTree = "<group>"; };
 		100000000000000000000006 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		100000000000000000000007 /* LogListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogListView.swift; sourceTree = "<group>"; };
@@ -95,7 +93,6 @@
 		100000000000000000000305 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				100000000000000000000004 /* AILogService.swift */,
 				100000000000000000000005 /* RecommendationService.swift */,
 				100000000000000000000018 /* UserLocationProvider.swift */,
 			);
@@ -190,7 +187,6 @@
 			files = (
 				100000000000000000000101 /* App.swift in Sources */,
 				100000000000000000000102 /* FoodModels.swift in Sources */,
-				100000000000000000000104 /* AILogService.swift in Sources */,
 				100000000000000000000105 /* RecommendationService.swift in Sources */,
 				100000000000000000000116 /* UserLocationProvider.swift in Sources */,
 				100000000000000000000106 /* ContentView.swift in Sources */,
