@@ -9,7 +9,18 @@ struct LogListView: View {
     @State private var selectedFilter = "全部"
     @State private var showingNewLog = false
 
-    private let filters = ["全部", "踩雷", "夜宵", "独食", "朋友聚餐"]
+    private var filters: [String] {
+        let foodTypes = logs
+            .map(\.foodType)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty && $0 != "自动识别" }
+        let tags = logs
+            .flatMap(\.tags)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        let sourcedFilters = Array(Set(foodTypes + tags)).sorted()
+        return ["全部", "踩雷"] + sourcedFilters
+    }
 
     var filteredLogs: [FoodLog] {
         logs.filter { log in
@@ -26,7 +37,7 @@ struct LogListView: View {
             case "踩雷":
                 filterMatches = log.isPitfall
             default:
-                filterMatches = log.tags.contains(selectedFilter)
+                filterMatches = log.foodType == selectedFilter || log.tags.contains(selectedFilter)
             }
 
             return queryMatches && filterMatches
@@ -85,6 +96,10 @@ struct LogListView: View {
         }
         .onAppear {
             locationProvider.refresh()
+            resetMissingFilter()
+        }
+        .onChange(of: filters) { _, _ in
+            resetMissingFilter()
         }
     }
 
@@ -153,5 +168,11 @@ struct LogListView: View {
         .frame(maxWidth: .infinity)
         .padding(.top, 80)
         .padding(.horizontal, 24)
+    }
+
+    private func resetMissingFilter() {
+        if !filters.contains(selectedFilter) {
+            selectedFilter = "全部"
+        }
     }
 }

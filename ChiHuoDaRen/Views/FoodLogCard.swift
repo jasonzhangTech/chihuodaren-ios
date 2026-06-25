@@ -33,6 +33,10 @@ struct FoodLogCard: View {
                             .font(.title3.bold())
                             .foregroundStyle(Color.ink)
                             .lineLimit(1)
+                        Text(Self.dateFormatter.string(from: log.createdAt))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                         Text("\(log.foodType.isEmpty ? "未分类" : log.foodType) · \(distanceText)")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
@@ -80,6 +84,13 @@ struct FoodLogCard: View {
         360
         #endif
     }
+
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_Hans_CN")
+        formatter.dateFormat = "yyyy年M月d日 HH:mm"
+        return formatter
+    }()
 }
 
 struct RatingBadge: View {
