@@ -29,8 +29,8 @@ enum RecommendationService {
         if winner.revisitIntent == .yes {
             reasons.append("你标过再去")
         }
-        if winner.preferredRating > 0 {
-            reasons.append("评分 \(String(format: "%.1f", winner.preferredRating))")
+        if winner.finalRating > 0 {
+            reasons.append("评分 \(String(format: "%.1f", winner.finalRating))")
         }
         if !scene.isEmpty, scene != "不限", winner.tags.contains(scene) {
             reasons.append("适合\(scene)")
@@ -43,7 +43,7 @@ enum RecommendationService {
     }
 
     private static func score(_ log: FoodLog) -> Double {
-        var value = log.preferredRating
+        var value = log.finalRating
         if log.revisitIntent == .yes { value += 1.2 }
         if log.revisitIntent == .no { value -= 1.4 }
         if log.isPitfall { value -= 2.0 }

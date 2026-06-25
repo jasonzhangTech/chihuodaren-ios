@@ -8,6 +8,8 @@ import AppKit
 struct PhotoMosaicView: View {
     let photos: [FoodPhoto]
     let height: CGFloat
+    var maxPhotos: Int = 9
+    var showsOverflowCount: Bool = true
 
     var body: some View {
         GeometryReader { proxy in
@@ -27,7 +29,7 @@ struct PhotoMosaicView: View {
                 } else if photos.count == 1 {
                     photoImage(photos[0])
                 } else {
-                    let displayPhotos = Array(photos.prefix(9))
+                    let displayPhotos = Array(photos.prefix(maxPhotos))
                     let columns = gridColumns(for: displayPhotos.count)
                     let rows = Int(ceil(Double(displayPhotos.count) / Double(columns)))
                     let spacing: CGFloat = 4
@@ -45,8 +47,8 @@ struct PhotoMosaicView: View {
                                 photoImage(photo)
                                     .frame(width: itemSize, height: itemSize)
                                     .clipped()
-                                if index == 8 && photos.count > 9 {
-                                    Text("+\(photos.count - 9)")
+                                if showsOverflowCount && index == displayPhotos.count - 1 && photos.count > displayPhotos.count {
+                                    Text("+\(photos.count - displayPhotos.count)")
                                         .font(.headline.bold())
                                         .foregroundStyle(.white)
                                         .frame(width: itemSize, height: itemSize)

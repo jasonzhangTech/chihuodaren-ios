@@ -17,22 +17,6 @@ enum AIStatus: String, Codable, CaseIterable {
     case edited
 }
 
-enum RatingSource: String, Codable, CaseIterable {
-    case dianping
-    case amap
-    case manual
-    case mixed
-
-    var label: String {
-        switch self {
-        case .dianping: "大众点评"
-        case .amap: "高德扫街榜"
-        case .manual: "手动"
-        case .mixed: "自动+手动"
-        }
-    }
-}
-
 enum RevisitIntent: String, Codable, CaseIterable {
     case yes
     case maybe
@@ -102,9 +86,9 @@ final class FoodLog {
     var shopName: String
     var foodType: String
     var rating: Double
-    var dianpingRating: Double?
-    var amapRating: Double?
-    var ratingSourceRaw: String
+    var environmentRating: Double = 0
+    var serviceRating: Double = 0
+    var dishRating: Double = 0
     @Relationship(deleteRule: .cascade) var recommendedDishes: [Dish]
     @Relationship(deleteRule: .cascade) var photos: [FoodPhoto]
     var voiceNoteText: String
@@ -125,7 +109,6 @@ final class FoodLog {
         shopName: String = "",
         foodType: String = "",
         rating: Double = 0,
-        ratingSource: RatingSource = .manual,
         recommendedDishes: [Dish] = [],
         photos: [FoodPhoto] = []
     ) {
@@ -136,9 +119,9 @@ final class FoodLog {
         self.shopName = shopName
         self.foodType = foodType
         self.rating = rating
-        self.dianpingRating = ratingSource == .dianping || ratingSource == .mixed ? rating : nil
-        self.amapRating = ratingSource == .amap ? rating : nil
-        self.ratingSourceRaw = ratingSource.rawValue
+        self.environmentRating = 0
+        self.serviceRating = 0
+        self.dishRating = rating
         self.recommendedDishes = recommendedDishes
         self.photos = photos
         self.voiceNoteText = ""
@@ -166,11 +149,6 @@ final class FoodLog {
         set { aiStatusRaw = newValue.rawValue }
     }
 
-    var ratingSource: RatingSource {
-        get { RatingSource(rawValue: ratingSourceRaw) ?? .manual }
-        set { ratingSourceRaw = newValue.rawValue }
-    }
-
     var revisitIntent: RevisitIntent {
         get { RevisitIntent(rawValue: revisitIntentRaw) ?? .maybe }
         set { revisitIntentRaw = newValue.rawValue }
@@ -181,8 +159,10 @@ final class FoodLog {
         set { privacyLevelRaw = newValue.rawValue }
     }
 
-    var preferredRating: Double {
-        dianpingRating ?? amapRating ?? rating
+    var finalRating: Double {
+        let parts = [environmentRating, serviceRating, dishRating].filter { $0 > 0 }
+        guard !parts.isEmpty else { return rating }
+        return parts.reduce(0, +) / Double(parts.count)
     }
 
     var coverPhoto: FoodPhoto? {
@@ -203,7 +183,7 @@ final class FoodLog {
     var isReadyForPOAcceptance: Bool {
         !shopName.isEmpty &&
         !foodType.isEmpty &&
-        preferredRating > 0 &&
+        finalRating > 0 &&
         !recommendedDishes.isEmpty &&
         !photos.isEmpty &&
         !aiBody.isEmpty

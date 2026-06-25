@@ -17,9 +17,9 @@ struct LogEditorView: View {
     @State private var isPhotoSourceDialogPresented = false
     @State private var shopName = ""
     @State private var foodType = "自动识别"
-    @State private var rating = 0.0
-    @State private var dianpingRating: Double?
-    @State private var amapRating: Double?
+    @State private var environmentRating = 0.0
+    @State private var serviceRating = 0.0
+    @State private var dishRating = 0.0
     @State private var dishText = ""
     @State private var voiceNoteText = ""
     @State private var userComment = ""
@@ -54,27 +54,16 @@ struct LogEditorView: View {
                     }
                 }
 
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 12) {
+                    StarRatingRow(title: "环境", value: $environmentRating)
+                    StarRatingRow(title: "服务", value: $serviceRating)
+                    StarRatingRow(title: "菜品", value: $dishRating)
                     HStack {
-                        Text("大众点评")
+                        Text("最终评分")
                         Spacer()
-                        Text(dianpingRating.map { String(format: "%.1f", $0) } ?? "待获取")
-                            .font(.body.monospacedDigit())
-                            .foregroundStyle(dianpingRating == nil ? .secondary : Color.ink)
-                    }
-                    HStack {
-                        Text("高德")
-                        Spacer()
-                        Text(amapRating.map { String(format: "%.1f", $0) } ?? "待获取")
-                            .font(.body.monospacedDigit())
-                            .foregroundStyle(amapRating == nil ? .secondary : Color.ink)
-                    }
-                    HStack {
-                        Text("手动兜底")
-                        Slider(value: $rating, in: 0...5, step: 0.1)
-                        Text(rating > 0 ? String(format: "%.1f", rating) : "--")
-                            .font(.body.monospacedDigit())
-                            .frame(width: 42, alignment: .trailing)
+                        Text(finalRating > 0 ? String(format: "%.1f", finalRating) : "--")
+                            .font(.body.weight(.semibold).monospacedDigit())
+                            .foregroundStyle(Color.ink)
                     }
                 }
 
@@ -173,9 +162,14 @@ struct LogEditorView: View {
         .onChange(of: selectedItems) { _, items in
             loadPhotos(items)
         }
-        .onChange(of: shopName) { _, _ in autosave() }
+        .onChange(of: shopName) { _, _ in
+            inferDefaultFoodTypeIfNeeded()
+            autosave()
+        }
         .onChange(of: foodType) { _, _ in autosave() }
-        .onChange(of: rating) { _, _ in autosave() }
+        .onChange(of: environmentRating) { _, _ in autosave() }
+        .onChange(of: serviceRating) { _, _ in autosave() }
+        .onChange(of: dishRating) { _, _ in autosave() }
         .onChange(of: dishText) { _, _ in autosave() }
         .onChange(of: voiceNoteText) { _, _ in autosave() }
         .onChange(of: userComment) { _, _ in autosave() }
@@ -216,9 +210,9 @@ struct LogEditorView: View {
             log = existingLog
             shopName = existingLog.shopName
             foodType = existingLog.foodType.isEmpty ? "自动识别" : existingLog.foodType
-            rating = existingLog.rating
-            dianpingRating = existingLog.dianpingRating
-            amapRating = existingLog.amapRating
+            environmentRating = existingLog.environmentRating
+            serviceRating = existingLog.serviceRating
+            dishRating = existingLog.dishRating
             dishText = existingLog.recommendedDishes.sorted { $0.rank < $1.rank }.map(\.name).joined(separator: "、")
             voiceNoteText = existingLog.voiceNoteText
             userComment = existingLog.userComment
@@ -264,9 +258,10 @@ struct LogEditorView: View {
     private func applyForm(to log: FoodLog) {
         log.shopName = shopName.trimmingCharacters(in: .whitespacesAndNewlines)
         log.foodType = foodType == "自动识别" ? inferFoodType(from: shopName) : foodType
-        log.rating = rating > 0 ? rating : max(max(dianpingRating ?? 0, amapRating ?? 0), log.rating)
-        log.dianpingRating = dianpingRating ?? log.dianpingRating
-        log.amapRating = amapRating ?? log.amapRating
+        log.environmentRating = environmentRating
+        log.serviceRating = serviceRating
+        log.dishRating = dishRating
+        log.rating = finalRating
         log.voiceNoteText = voiceNoteText
         log.userComment = userComment
         log.revisitIntent = revisitIntent
@@ -296,17 +291,11 @@ struct LogEditorView: View {
         Task {
             let suggestion = await AutoFillService.suggest(for: shopName, foodType: foodType)
             await MainActor.run {
-                dianpingRating = suggestion.dianpingRating
-                amapRating = suggestion.amapRating
-                rating = suggestion.preferredRating
                 if foodType == "自动识别" {
                     foodType = suggestion.foodType
                 }
                 dishText = suggestion.dishes.joined(separator: "、")
                 let log = ensureLog()
-                log.ratingSource = suggestion.ratingSource
-                log.dianpingRating = suggestion.dianpingRating
-                log.amapRating = suggestion.amapRating
                 log.district = suggestion.district
                 log.address = suggestion.address
                 log.latitude = suggestion.latitude
@@ -404,7 +393,7 @@ struct LogEditorView: View {
         !shopName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
         !voiceNoteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
         !userComment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-        rating > 0 ||
+        finalRating > 0 ||
         !dishText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
         !(log?.photos.isEmpty ?? true)
     }
@@ -440,14 +429,6 @@ struct LogEditorView: View {
     private func autofillBeforeGenerating(_ log: FoodLog) async {
         let suggestion = await AutoFillService.suggest(for: log.shopName, foodType: log.foodType)
         await MainActor.run {
-            if log.rating <= 0 {
-                log.rating = suggestion.preferredRating
-                rating = suggestion.preferredRating
-            }
-            log.dianpingRating = suggestion.dianpingRating
-            log.amapRating = suggestion.amapRating
-            dianpingRating = suggestion.dianpingRating
-            amapRating = suggestion.amapRating
             if log.foodType.isEmpty || log.foodType == "自动识别" {
                 log.foodType = suggestion.foodType
                 foodType = suggestion.foodType
@@ -458,7 +439,6 @@ struct LogEditorView: View {
                 }
                 dishText = suggestion.dishes.joined(separator: "、")
             }
-            log.ratingSource = suggestion.ratingSource
             log.district = suggestion.district
             log.address = suggestion.address
             log.latitude = suggestion.latitude
@@ -476,6 +456,81 @@ struct LogEditorView: View {
         if text.contains("咖啡") { return "咖啡" }
         if text.contains("甜") || text.contains("蛋糕") { return "甜品" }
         return "小吃"
+    }
+
+    private var finalRating: Double {
+        let parts = [environmentRating, serviceRating, dishRating].filter { $0 > 0 }
+        guard !parts.isEmpty else { return 0 }
+        return parts.reduce(0, +) / Double(parts.count)
+    }
+
+    private func inferDefaultFoodTypeIfNeeded() {
+        guard foodType == "自动识别" || foodType.isEmpty else { return }
+        let trimmed = shopName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        foodType = inferFoodType(from: trimmed)
+    }
+}
+
+private struct StarRatingRow: View {
+    let title: String
+    @Binding var value: Double
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(title)
+                .frame(width: 44, alignment: .leading)
+            HStack(spacing: 4) {
+                ForEach(1...5, id: \.self) { index in
+                    HalfStarButton(index: index, value: $value)
+                }
+            }
+            Spacer()
+            Text(value > 0 ? String(format: "%.1f", value) : "--")
+                .font(.body.monospacedDigit())
+                .frame(width: 42, alignment: .trailing)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct HalfStarButton: View {
+    let index: Int
+    @Binding var value: Double
+
+    var body: some View {
+        ZStack {
+            Image(systemName: symbolName)
+                .font(.title3)
+                .foregroundStyle(value >= Double(index) || value >= Double(index) - 0.5 ? Color.orange : Color.secondary.opacity(0.28))
+                .frame(width: 28, height: 28)
+
+            HStack(spacing: 0) {
+                Button {
+                    value = Double(index) - 0.5
+                } label: {
+                    Color.clear
+                }
+                Button {
+                    value = Double(index)
+                } label: {
+                    Color.clear
+                }
+            }
+        }
+        .frame(width: 28, height: 28)
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(index) 星")
+    }
+
+    private var symbolName: String {
+        if value >= Double(index) {
+            return "star.fill"
+        }
+        if value >= Double(index) - 0.5 {
+            return "star.leadinghalf.filled"
+        }
+        return "star"
     }
 }
 

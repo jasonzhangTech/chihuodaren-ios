@@ -26,7 +26,7 @@ struct LogDetailView: View {
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
-                        DualRatingBadge(dianpingRating: log.dianpingRating, amapRating: log.amapRating, fallbackRating: log.rating)
+                        RatingBadge(value: log.finalRating)
                     }
 
                     FlowLayout(items: log.recommendedDishes.sorted { $0.rank < $1.rank }.map(\.name))
