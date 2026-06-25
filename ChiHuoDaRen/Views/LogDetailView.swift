@@ -10,7 +10,6 @@ struct LogDetailView: View {
     @EnvironmentObject private var locationProvider: UserLocationProvider
     @Bindable var log: FoodLog
     @State private var showingEditor = false
-    @State private var isRegenerating = false
 
     var body: some View {
         ScrollView {
@@ -23,9 +22,9 @@ struct LogDetailView: View {
                             Text(log.shopName)
                                 .font(.largeTitle.bold())
                                 .foregroundStyle(Color.ink)
-	                            Text("\(log.foodType) · \(locationProvider.distanceText(to: log))")
-	                                .foregroundStyle(.secondary)
-	                        }
+                            Text("\(log.foodType) · \(locationProvider.distanceText(to: log))")
+                                .foregroundStyle(.secondary)
+                        }
                         Spacer()
                         RatingBadge(value: log.finalRating)
                     }
@@ -35,18 +34,18 @@ struct LogDetailView: View {
                     HStack {
                         if log.isPitfall {
                             StatusPill(text: "踩雷", systemImage: "hand.thumbsdown")
-	                        } else {
-	                            StatusPill(text: "推荐", systemImage: "hand.thumbsup")
-	                        }
-	                    }
-	                }
+                        } else {
+                            StatusPill(text: "推荐", systemImage: "hand.thumbsup")
+                        }
+                    }
+                }
 
                 if hasNavigationTarget {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("位置")
                             .font(.headline)
-	                        Text(log.displayAddress)
-	                            .foregroundStyle(.secondary)
+                        Text(log.displayAddress)
+                            .foregroundStyle(.secondary)
                         Button {
                             openNavigation()
                         } label: {
@@ -60,49 +59,16 @@ struct LogDetailView: View {
                     .background(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
-
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text(log.aiTitle.isEmpty ? "AI 美食日志" : log.aiTitle)
-                            .font(.title2.bold())
-                        Spacer()
-                        if isRegenerating || log.aiStatus == .generating {
-                            ProgressView()
-                        }
-                    }
-
-	                    TextField("AI 日志生成后会出现在这里", text: $log.aiBody, axis: .vertical)
-	                        .font(.body)
-	                        .chineseTextInput()
-	                        .lineLimit(5...12)
-                        .padding(12)
-                        .background(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                        .onChange(of: log.aiBody) { _, _ in
-                            if log.aiStatus == .generated {
-                                log.aiStatus = .edited
-                            }
-                            log.updatedAt = Date()
-                            try? modelContext.save()
-                        }
-
-                    Button {
-                        regenerate()
-                    } label: {
-                        Label("重新生成", systemImage: "arrow.clockwise")
-                    }
-                    .disabled(isRegenerating)
-                }
             }
-	            .padding(16)
-	            .padding(.bottom, 110)
-	        }
-	        .background(Color.paper)
-	        .navigationTitle("详情")
-	        .navigationBarTitleDisplayMode(.inline)
-	        .onAppear {
-	            locationProvider.refresh()
-	        }
+            .padding(16)
+            .padding(.bottom, 110)
+        }
+        .background(Color.paper)
+        .navigationTitle("详情")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            locationProvider.refresh()
+        }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button("删除", role: .destructive) {
@@ -136,7 +102,7 @@ struct LogDetailView: View {
                 URLQueryItem(name: "q", value: log.shopName)
             ]
         } else {
-	            let destination = [log.shopName, log.displayAddress]
+            let destination = [log.shopName, log.displayAddress]
                 .filter { !$0.isEmpty }
                 .joined(separator: " ")
             components.queryItems = [
@@ -149,26 +115,6 @@ struct LogDetailView: View {
         #if canImport(UIKit)
         UIApplication.shared.open(url)
         #endif
-    }
-
-    private func regenerate() {
-        isRegenerating = true
-        log.aiStatus = .generating
-        log.status = .generating
-        try? modelContext.save()
-
-        Task {
-            let result = await AILogService.generate(for: log)
-            await MainActor.run {
-                log.aiTitle = result.title
-                log.aiBody = result.body
-                log.aiStatus = .generated
-                log.status = .generated
-                log.updatedAt = Date()
-                try? modelContext.save()
-                isRegenerating = false
-            }
-        }
     }
 }
 

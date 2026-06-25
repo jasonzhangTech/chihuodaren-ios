@@ -51,7 +51,7 @@ func generateAI(for log: FoodLog) -> (title: String, body: String) {
         .map(\.name)
         .prefix(3)
         .joined(separator: "、")
-    let title = log.isPitfall ? "\(log.shopName)避雷备忘" : "\(log.shopName)再吃备忘"
+    let title = log.isPitfall ? "\(log.shopName)避雷记录" : "\(log.shopName)美食记录"
     let tail = log.isPitfall ? "这次标为踩雷，下次先避开。" : "适合下次不知道吃什么时回来兜底。"
     let body = "\(log.district)的\(log.shopName)可以记进\(log.foodType)清单。推荐先点\(dishText)，综合评分 \(String(format: "%.1f", log.finalRating))。\(tail)"
 

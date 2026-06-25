@@ -145,7 +145,7 @@ struct LogListView: View {
                 .foregroundStyle(Color.tomato)
             Text("把第一家小店记下来")
                 .font(.title3.bold())
-            Text("照片、店名、评分和推荐菜先保存，AI 日志会在后台慢慢写。")
+            Text("照片、店名、评分和推荐菜先保存，之后回看更省心。")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

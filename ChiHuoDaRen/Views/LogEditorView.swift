@@ -102,27 +102,6 @@ struct LogEditorView: View {
                 ThumbJudgementControl(isPitfall: $isPitfall)
             }
 
-            if let log, !log.aiBody.isEmpty || isGenerating {
-                Section("AI 日志") {
-                    if isGenerating {
-                        HStack {
-                            ProgressView()
-                            Text("AI 日志生成中，可先离开")
-                        }
-                    }
-	                    TextField("AI 生成内容", text: Binding(
-	                        get: { log.aiBody },
-	                        set: { newValue in
-                            log.aiBody = newValue
-                            log.aiStatus = .edited
-                            log.updatedAt = Date()
-                        }
-	                    ), axis: .vertical)
-	                    .chineseTextInput()
-	                    .lineLimit(4...8)
-                }
-            }
-
             if let errorMessage {
                 Section {
                     Text(errorMessage)

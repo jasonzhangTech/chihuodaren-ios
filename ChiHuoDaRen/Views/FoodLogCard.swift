@@ -56,11 +56,6 @@ struct FoodLogCard: View {
                     }
                 }
 
-                Text(log.aiBody.isEmpty ? "AI 日志待生成，原始记录已保存在本地。" : log.aiBody)
-                    .font(.subheadline)
-                    .foregroundStyle(Color.ink.opacity(0.78))
-                    .lineLimit(3)
-
                 HStack(spacing: 8) {
                     if log.isPitfall {
                         StatusPill(text: "踩雷", systemImage: "hand.thumbsdown")
