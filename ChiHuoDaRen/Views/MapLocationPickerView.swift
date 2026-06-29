@@ -10,6 +10,7 @@ struct PickedLocation {
 
 struct MapLocationPickerView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var locationProvider: UserLocationProvider
 
     let initialAddress: String
     let initialLatitude: Double?
@@ -74,6 +75,13 @@ struct MapLocationPickerView: View {
             }
         }
         .onAppear(perform: prepareInitialLocation)
+        .onChange(of: locationProvider.currentLocation) { _, location in
+            guard initialLatitude == nil, selectedCoordinate == nil, let location else { return }
+            cameraPosition = .region(MKCoordinateRegion(
+                center: location.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
+            ))
+        }
     }
 
     private var searchBar: some View {
@@ -146,11 +154,17 @@ struct MapLocationPickerView: View {
     }
 
     private func prepareInitialLocation() {
+        locationProvider.refresh()
         searchText = initialAddress
         if let initialLatitude, let initialLongitude {
             let coordinate = CLLocationCoordinate2D(latitude: initialLatitude, longitude: initialLongitude)
             selectedCoordinate = coordinate
             selectedAddress = initialAddress
+            cameraPosition = .region(MKCoordinateRegion(
+                center: coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
+            ))
+        } else if let coordinate = locationProvider.currentLocation?.coordinate {
             cameraPosition = .region(MKCoordinateRegion(
                 center: coordinate,
                 span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
@@ -165,6 +179,12 @@ struct MapLocationPickerView: View {
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = query
         request.resultTypes = [.pointOfInterest, .address]
+        if let location = locationProvider.currentLocation {
+            request.region = MKCoordinateRegion(
+                center: location.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
+            )
+        }
 
         Task {
             do {

@@ -21,7 +21,8 @@ struct FoodLogCard: View {
                     height: coverHeight,
                     maxPhotos: 6,
                     showsOverflowCount: false,
-                    fillsWidth: true
+                    fillsWidth: true,
+                    emptyState: .defaultCover
                 )
             }
             .frame(height: PhotoMosaicView.requiredHeight(forPhotoCount: log.photos.count, width: estimatedCardWidth, maxPhotos: 6))

@@ -12,12 +12,10 @@ enum RecommendationService {
             switch filter {
             case "全部":
                 filterMatches = true
-            case "踩雷":
-                filterMatches = log.isPitfall
             default:
                 filterMatches = log.foodType == filter
             }
-            return filterMatches && log.status != .draft
+            return filterMatches && log.status != .draft && !log.isPitfall
         }
 
         let sorted = candidates.sorted { lhs, rhs in
@@ -35,9 +33,7 @@ enum RecommendationService {
         if winner.finalRating > 0 {
             reasons.append("评分 \(String(format: "%.1f", winner.finalRating))")
         }
-        if filter == "踩雷" {
-            reasons.append("踩雷记录")
-        } else if filter != "全部" {
+        if filter != "全部" {
             if winner.foodType == filter {
                 reasons.append("类型是\(filter)")
             }
@@ -50,8 +46,6 @@ enum RecommendationService {
     }
 
     private static func score(_ log: FoodLog) -> Double {
-        var value = log.finalRating
-        if log.isPitfall { value -= 2.0 }
-        return value
+        log.finalRating
     }
 }

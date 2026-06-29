@@ -2,6 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(\.modelContext) private var modelContext
     @StateObject private var locationProvider = UserLocationProvider()
 
     var body: some View {
@@ -22,6 +23,9 @@ struct ContentView: View {
         }
         .tint(.tomato)
         .environmentObject(locationProvider)
+        .task {
+            MockDataSeeder.seedTimelineDataIfRequested(in: modelContext)
+        }
     }
 }
 

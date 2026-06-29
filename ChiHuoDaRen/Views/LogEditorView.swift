@@ -8,6 +8,7 @@ import UIKit
 struct LogEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var locationProvider: UserLocationProvider
 
     let existingLog: FoodLog?
     @State private var log: FoodLog?
@@ -16,6 +17,7 @@ struct LogEditorView: View {
     @State private var isPhotoPickerPresented = false
     @State private var isCameraPresented = false
     @State private var isPhotoSourceDialogPresented = false
+    @State private var visitDate = Date()
     @State private var shopName = ""
     @State private var foodType = "其他"
     @State private var environmentRating = 0.0
@@ -44,6 +46,11 @@ struct LogEditorView: View {
                     .listRowBackground(Color.clear)
             }
 
+            Section("时间") {
+                DatePicker("探店日期", selection: $visitDate, displayedComponents: .date)
+                    .datePickerStyle(.compact)
+            }
+
             Section("店铺") {
                 TextField("店名", text: $shopName)
                     .chineseTextInput()
@@ -69,6 +76,7 @@ struct LogEditorView: View {
 
             Section("地址") {
                 Button {
+                    locationProvider.refresh()
                     showingLocationPicker = true
                 } label: {
                     HStack(spacing: 10) {
@@ -161,6 +169,7 @@ struct LogEditorView: View {
         .onChange(of: selectedItems) { _, items in
             loadPhotos(items)
         }
+        .onChange(of: visitDate) { _, _ in autosave() }
         .onChange(of: shopName) { _, _ in autosave() }
         .onChange(of: foodType) { _, _ in autosave() }
         .onChange(of: environmentRating) { _, _ in autosave() }
@@ -168,6 +177,7 @@ struct LogEditorView: View {
         .onChange(of: dishRating) { _, _ in autosave() }
         .onChange(of: dishText) { _, _ in autosave() }
         .onChange(of: address) { _, _ in autosave() }
+        .environment(\.locale, Locale(identifier: "zh_Hans_CN"))
         .tint(.tomato)
     }
 
@@ -204,6 +214,7 @@ struct LogEditorView: View {
         guard log == nil else { return }
         if let existingLog {
             log = existingLog
+            visitDate = existingLog.createdAt
             shopName = existingLog.shopName
             foodType = foodTypes.contains(existingLog.foodType) ? existingLog.foodType : "其他"
             environmentRating = existingLog.environmentRating
@@ -246,6 +257,7 @@ struct LogEditorView: View {
 
     private func applyForm(to log: FoodLog) {
         log.shopName = shopName.trimmingCharacters(in: .whitespacesAndNewlines)
+        log.createdAt = visitDate
         log.foodType = foodType
         log.environmentRating = environmentRating
         log.serviceRating = serviceRating

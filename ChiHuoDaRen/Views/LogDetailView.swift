@@ -14,7 +14,22 @@ struct LogDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                PhotoMosaicView(photos: log.photos, height: 300)
+                GeometryReader { proxy in
+                    PhotoMosaicView(
+                        photos: log.photos,
+                        height: PhotoMosaicView.requiredHeight(
+                            forPhotoCount: log.photos.count,
+                            width: proxy.size.width
+                        ),
+                        fillsWidth: true
+                    )
+                }
+                .frame(
+                    height: PhotoMosaicView.requiredHeight(
+                        forPhotoCount: log.photos.count,
+                        width: detailContentWidth
+                    )
+                )
 
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .firstTextBaseline) {
@@ -89,6 +104,14 @@ struct LogDetailView: View {
                 LogEditorView(log: log)
             }
         }
+    }
+
+    private var detailContentWidth: CGFloat {
+        #if canImport(UIKit)
+        max(1, UIScreen.main.bounds.width - 32)
+        #else
+        361
+        #endif
     }
 
     private var hasNavigationTarget: Bool {

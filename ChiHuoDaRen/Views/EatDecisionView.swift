@@ -9,11 +9,12 @@ struct EatDecisionView: View {
 
     private var filters: [String] {
         let foodTypes = logs
+            .filter { !$0.isPitfall && $0.status != .draft }
             .map(\.foodType)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
         let sourcedFilters = Array(Set(foodTypes)).sorted()
-        return ["全部", "踩雷"] + sourcedFilters
+        return ["全部"] + sourcedFilters
     }
 
     var body: some View {
@@ -72,7 +73,7 @@ struct EatDecisionView: View {
                             .foregroundStyle(Color.tomato)
                         Text("还没有匹配记录")
                             .font(.headline)
-                        Text("多记几家后，这里会按评分、踩雷标记和标签帮你挑。")
+                        Text("多记几家推荐店后，这里会按评分和类型帮你挑。")
                             .font(.body)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -83,9 +84,8 @@ struct EatDecisionView: View {
             }
             .padding(16)
         }
-	        .background(Color.paper)
-	        .navigationTitle("吃啥")
-        .navigationBarTitleDisplayMode(.inline)
+        .background(Color.paper)
+        .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             locationProvider.refresh()
             resetMissingFilter()
@@ -123,12 +123,10 @@ struct EatDecisionView: View {
             switch selectedFilter {
             case "全部":
                 filterMatches = true
-            case "踩雷":
-                filterMatches = log.isPitfall
             default:
                 filterMatches = log.foodType == selectedFilter
             }
-            return filterMatches && log.status != .draft
+            return filterMatches && log.status != .draft && !log.isPitfall
         }
 
         guard let next = matches.shuffled().first else { return nil }

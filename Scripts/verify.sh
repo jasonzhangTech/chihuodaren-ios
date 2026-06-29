@@ -11,13 +11,14 @@ echo "== Plist and project format =="
 plutil -lint ChiHuoDaRen.xcodeproj/project.pbxproj ChiHuoDaRen/Info.plist
 
 echo "== Asset JSON =="
-node -e "for (const f of ['ChiHuoDaRen/Assets.xcassets/Contents.json','ChiHuoDaRen/Assets.xcassets/AccentColor.colorset/Contents.json']) { JSON.parse(require('fs').readFileSync(f,'utf8')); console.log(f + ': OK') }"
+node -e "for (const f of ['ChiHuoDaRen/Assets.xcassets/Contents.json','ChiHuoDaRen/Assets.xcassets/AccentColor.colorset/Contents.json','ChiHuoDaRen/Assets.xcassets/AppIcon.appiconset/Contents.json']) { JSON.parse(require('fs').readFileSync(f,'utf8')); console.log(f + ': OK') }"
 
 echo "== Swift syntax parse =="
 swiftc -parse \
   ChiHuoDaRen/App.swift \
   ChiHuoDaRen/Models/FoodModels.swift \
   ChiHuoDaRen/Services/RecommendationService.swift \
+  ChiHuoDaRen/Services/MockDataSeeder.swift \
   ChiHuoDaRen/Services/UserLocationProvider.swift \
   ChiHuoDaRen/Views/ContentView.swift \
   ChiHuoDaRen/Views/LogListView.swift \
