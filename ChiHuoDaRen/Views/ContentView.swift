@@ -23,9 +23,6 @@ struct ContentView: View {
         }
         .tint(.tomato)
         .environmentObject(locationProvider)
-        .task {
-            MockDataSeeder.seedTimelineDataIfRequested(in: modelContext)
-        }
     }
 }
 

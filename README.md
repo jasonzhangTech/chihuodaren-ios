@@ -13,7 +13,6 @@
 ## 已实现功能
 
 - 日志首页：本地美食日志流、搜索、动态筛选、年月日时间展示
-- 时间轴：右侧按日期快速定位，跨年时按年份分段展示
 - 动态筛选：筛选项来自已有日志的类型，默认包含 `全部`、`踩雷`
 - 新建探店：店名必填，草稿自动保存，避免记录失败丢数据
 - 历史日期：新建和编辑日志可用 iOS 原生日期选择器选择探店日期，默认今天
@@ -36,17 +35,6 @@
 - 不再保留一句话口述、备忘、下次还去吗
 - 不再做默认位置保护文案，改为展示距离当前位置
 - 不包含社区、账号体系和云同步
-
-## 调试数据
-
-Debug 构建支持通过启动参数写入或清理时间轴验证数据：
-
-```sh
-xcrun simctl launch <device-id> com.jasonzhangtech.chihuodaren --seed-timeline-mock-data
-xcrun simctl launch <device-id> com.jasonzhangtech.chihuodaren --clear-timeline-mock-data
-```
-
-mock 数据均以 `时间轴验证` 开头，清理命令只删除这批数据。
 
 ## 运行方式
 

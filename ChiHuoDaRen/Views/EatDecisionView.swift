@@ -20,13 +20,9 @@ struct EatDecisionView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("今天吃啥")
-                        .font(.largeTitle.bold())
-                        .foregroundStyle(Color.ink)
-                    Text("只从你的本地日志里推荐，不够就直接告诉你。")
-                        .foregroundStyle(.secondary)
-                }
+                Text("今天吃啥")
+                    .font(.largeTitle.bold())
+                    .foregroundStyle(Color.ink)
 
                 VStack(alignment: .leading, spacing: 16) {
                     filterBar
@@ -52,7 +48,7 @@ struct EatDecisionView: View {
                         LogDetailView(log: currentRecommendation.log)
                     } label: {
                         VStack(alignment: .leading, spacing: 12) {
-	                            FoodLogCard(log: currentRecommendation.log, distanceText: locationProvider.distanceText(to: currentRecommendation.log))
+                            FoodLogCard(log: currentRecommendation.log, distanceText: locationProvider.distanceText(to: currentRecommendation.log))
                             Label(currentRecommendation.reason, systemImage: "lightbulb")
                                 .font(.subheadline.weight(.medium))
                                 .foregroundStyle(Color.leaf)
@@ -130,7 +126,7 @@ struct EatDecisionView: View {
         }
 
         guard let next = matches.shuffled().first else { return nil }
-        return FoodRecommendation(log: next, reason: "换了一个符合条件的本地记录")
+        return FoodRecommendation(log: next, reason: RecommendationService.alternativeReason(for: next))
     }
 
     private func resetMissingFilter() {

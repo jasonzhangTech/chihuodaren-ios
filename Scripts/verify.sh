@@ -18,7 +18,6 @@ swiftc -parse \
   ChiHuoDaRen/App.swift \
   ChiHuoDaRen/Models/FoodModels.swift \
   ChiHuoDaRen/Services/RecommendationService.swift \
-  ChiHuoDaRen/Services/MockDataSeeder.swift \
   ChiHuoDaRen/Services/UserLocationProvider.swift \
   ChiHuoDaRen/Views/ContentView.swift \
   ChiHuoDaRen/Views/LogListView.swift \
