@@ -11,8 +11,12 @@ struct LogListView: View {
 
     private let calendar = Calendar(identifier: .gregorian)
 
+    private var savedLogs: [FoodLog] {
+        logs.filter { $0.status == .saved }
+    }
+
     private var filters: [String] {
-        let foodTypes = logs
+        let foodTypes = savedLogs
             .map(\.foodType)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
@@ -21,7 +25,7 @@ struct LogListView: View {
     }
 
     var filteredLogs: [FoodLog] {
-        logs.filter { log in
+        savedLogs.filter { log in
             let queryMatches = searchText.isEmpty ||
                 log.shopName.localizedStandardContains(searchText) ||
                 log.foodType.localizedStandardContains(searchText) ||
@@ -61,7 +65,7 @@ struct LogListView: View {
             Color.paper.ignoresSafeArea()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 18) {
                     draftBanner
                     filterBar
 
@@ -72,8 +76,12 @@ struct LogListView: View {
                             ForEach(groupedLogs, id: \.day) { group in
                                 VStack(alignment: .leading, spacing: 10) {
                                     Text(Self.sectionDateFormatter.string(from: group.day))
-                                        .font(.headline.weight(.semibold))
-                                        .foregroundStyle(Color.ink)
+                                        .font(.callout.monospacedDigit().weight(.black))
+                                        .foregroundStyle(Color.soy)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .background(Color.chiliSoft.opacity(0.55))
+                                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                                     ForEach(group.logs) { log in
                                         NavigationLink {
@@ -99,7 +107,7 @@ struct LogListView: View {
                 showingNewLog = true
             } label: {
                 Label("新建", systemImage: "plus")
-                    .font(.headline)
+                    .font(.headline.weight(.black))
                     .padding(.horizontal, 18)
                     .padding(.vertical, 14)
                     .background(Color.tomato)
@@ -146,8 +154,7 @@ struct LogListView: View {
                         .foregroundStyle(.secondary)
                 }
                 .padding(14)
-                .background(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .ticketSurface()
             }
             .buttonStyle(.plain)
         }
@@ -161,13 +168,18 @@ struct LogListView: View {
                         selectedFilter = filter
                     } label: {
                         Text(filter)
-                            .font(.subheadline.weight(.medium))
+                            .font(.subheadline.weight(.bold))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(selectedFilter == filter ? Color.tomato : .white)
+                            .background(selectedFilter == filter ? Color.tomato : Color.ticket)
                             .foregroundStyle(selectedFilter == filter ? .white : Color.ink)
-                            .clipShape(Capsule())
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .stroke(selectedFilter == filter ? Color.clear : Color.riceLine.opacity(0.32), lineWidth: 1)
+                            }
                     }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -179,10 +191,11 @@ struct LogListView: View {
                 .font(.system(size: 44))
                 .foregroundStyle(Color.tomato)
             Text("把第一家小店记下来")
-                .font(.title3.bold())
+                .font(.title3.weight(.black))
+                .foregroundStyle(Color.ink)
             Text("照片、店名、评分和推荐菜先保存，之后回看更省心。")
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.ink.opacity(0.55))
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)

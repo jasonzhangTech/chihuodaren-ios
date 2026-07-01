@@ -22,6 +22,7 @@ struct MapLocationPickerView: View {
     @State private var selectedCoordinate: CLLocationCoordinate2D?
     @State private var selectedAddress = ""
     @State private var selectedDistrict = ""
+    @State private var isResolvingSelectedAddress = false
     @State private var cameraPosition: MapCameraPosition = .region(
         MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737),
@@ -61,26 +62,22 @@ struct MapLocationPickerView: View {
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button("完成") {
-                    guard let selectedCoordinate else { return }
+                    guard let selectedCoordinate, canFinishSelection else { return }
                     onSelect(PickedLocation(
-                        address: selectedAddress.isEmpty ? "地图选点" : selectedAddress,
+                        address: selectedAddress,
                         district: selectedDistrict,
                         latitude: selectedCoordinate.latitude,
                         longitude: selectedCoordinate.longitude
                     ))
                     dismiss()
                 }
-                .disabled(selectedCoordinate == nil)
+                .disabled(!canFinishSelection)
                 .fontWeight(.semibold)
             }
         }
         .onAppear(perform: prepareInitialLocation)
         .onChange(of: locationProvider.currentLocation) { _, location in
-            guard initialLatitude == nil, selectedCoordinate == nil, let location else { return }
-            cameraPosition = .region(MKCoordinateRegion(
-                center: location.coordinate,
-                span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
-            ))
+            autoSelectCurrentLocationIfNeeded(location)
         }
     }
 
@@ -137,7 +134,7 @@ struct MapLocationPickerView: View {
     private var selectedLocationCard: some View {
         if let selectedCoordinate {
             VStack(alignment: .leading, spacing: 6) {
-                Text(selectedAddress.isEmpty ? "已选择位置" : selectedAddress)
+                Text(selectedLocationTitle)
                     .font(.headline)
                     .foregroundStyle(Color.ink)
                     .lineLimit(2)
@@ -153,6 +150,19 @@ struct MapLocationPickerView: View {
         }
     }
 
+    private var canFinishSelection: Bool {
+        selectedCoordinate != nil &&
+        !isResolvingSelectedAddress &&
+        MapInitialLocationPolicy.canFinishSelection(address: selectedAddress)
+    }
+
+    private var selectedLocationTitle: String {
+        if isResolvingSelectedAddress {
+            return "正在获取具体地址..."
+        }
+        return MapInitialLocationPolicy.canFinishSelection(address: selectedAddress) ? selectedAddress : "未获取到具体地址，请搜索或点选附近店铺"
+    }
+
     private func prepareInitialLocation() {
         locationProvider.refresh()
         searchText = initialAddress
@@ -165,11 +175,19 @@ struct MapLocationPickerView: View {
                 span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
             ))
         } else if let coordinate = locationProvider.currentLocation?.coordinate {
-            cameraPosition = .region(MKCoordinateRegion(
-                center: coordinate,
-                span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
-            ))
+            select(coordinate: coordinate, fallbackName: "当前位置")
         }
+    }
+
+    private func autoSelectCurrentLocationIfNeeded(_ location: CLLocation?) {
+        guard MapInitialLocationPolicy.shouldAutoSelectCurrentLocation(
+            hasInitialCoordinate: initialLatitude != nil,
+            hasSelectedCoordinate: selectedCoordinate != nil,
+            hasCurrentLocation: location != nil
+        ), let location else {
+            return
+        }
+        select(coordinate: location.coordinate, fallbackName: "当前位置")
     }
 
     private func searchPlaces() {
@@ -206,8 +224,9 @@ struct MapLocationPickerView: View {
     private func select(mapItem: MKMapItem) {
         let placemark = mapItem.placemark
         selectedCoordinate = placemark.coordinate
-        selectedAddress = mapItem.name ?? compactAddress(for: placemark)
+        selectedAddress = concreteAddress(for: mapItem)
         selectedDistrict = placemark.locality ?? placemark.subLocality ?? placemark.administrativeArea ?? ""
+        isResolvingSelectedAddress = false
         cameraPosition = .region(MKCoordinateRegion(
             center: placemark.coordinate,
             span: MKCoordinateSpan(latitudeDelta: 0.015, longitudeDelta: 0.015)
@@ -218,36 +237,73 @@ struct MapLocationPickerView: View {
         selectedCoordinate = coordinate
         selectedAddress = fallbackName
         selectedDistrict = ""
+        isResolvingSelectedAddress = true
         cameraPosition = .region(MKCoordinateRegion(
             center: coordinate,
             span: MKCoordinateSpan(latitudeDelta: 0.015, longitudeDelta: 0.015)
         ))
 
         Task {
-            let geocoder = CLGeocoder()
-            if let placemark = try? await geocoder.reverseGeocodeLocation(CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)).first {
+            let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+            if let resolved = await resolveConcreteAddress(for: location) {
                 await MainActor.run {
-                    selectedAddress = compactAddress(for: placemark)
-                    selectedDistrict = placemark.locality ?? placemark.subLocality ?? placemark.administrativeArea ?? ""
+                    selectedAddress = resolved.address
+                    selectedDistrict = resolved.district
+                    isResolvingSelectedAddress = false
+                }
+            } else {
+                await MainActor.run {
+                    isResolvingSelectedAddress = false
                 }
             }
         }
     }
 
-    private func compactAddress(for placemark: MKPlacemark) -> String {
-        [
-            placemark.locality,
-            placemark.subLocality,
-            placemark.thoroughfare,
-            placemark.subThoroughfare
-        ]
-        .compactMap { $0 }
-        .filter { !$0.isEmpty }
-        .joined(separator: " ")
+    private func resolveConcreteAddress(for location: CLLocation) async -> (address: String, district: String)? {
+        if #available(iOS 26.0, *) {
+            let request = MKReverseGeocodingRequest(location: location)
+            request?.preferredLocale = Locale(identifier: "zh_Hans_CN")
+            if let mapItems = try? await request?.mapItems {
+                for item in mapItems {
+                    let address = concreteAddress(for: item)
+                    if MapInitialLocationPolicy.canFinishSelection(address: address) {
+                        let placemark = item.placemark
+                        return (address, placemark.locality ?? placemark.subLocality ?? placemark.administrativeArea ?? "")
+                    }
+                }
+            }
+        }
+
+        let geocoder = CLGeocoder()
+        if let placemark = try? await geocoder.reverseGeocodeLocation(location).first {
+            let address = concreteAddress(for: placemark)
+            if MapInitialLocationPolicy.canFinishSelection(address: address) {
+                return (address, placemark.locality ?? placemark.subLocality ?? placemark.administrativeArea ?? "")
+            }
+        }
+
+        let request = MKLocalPointsOfInterestRequest(center: location.coordinate, radius: 120)
+        if let response = try? await MKLocalSearch(request: request).start() {
+            let nearest = response.mapItems.min { lhs, rhs in
+                let leftDistance = lhs.placemark.location?.distance(from: location) ?? .greatestFiniteMagnitude
+                let rightDistance = rhs.placemark.location?.distance(from: location) ?? .greatestFiniteMagnitude
+                return leftDistance < rightDistance
+            }
+            if let nearest {
+                let address = concreteAddress(for: nearest)
+                if MapInitialLocationPolicy.canFinishSelection(address: address) {
+                    let placemark = nearest.placemark
+                    return (address, placemark.locality ?? placemark.subLocality ?? placemark.administrativeArea ?? "")
+                }
+            }
+        }
+
+        return nil
     }
 
-    private func compactAddress(for placemark: CLPlacemark) -> String {
+    private func compactAddress(for placemark: MKPlacemark) -> String {
         [
+            placemark.administrativeArea,
             placemark.locality,
             placemark.subLocality,
             placemark.thoroughfare,
@@ -257,5 +313,34 @@ struct MapLocationPickerView: View {
         .compactMap { $0 }
         .filter { !$0.isEmpty }
         .joined(separator: " ")
+    }
+
+    private func compactAddress(for placemark: CLPlacemark) -> String {
+        [
+            placemark.administrativeArea,
+            placemark.locality,
+            placemark.subLocality,
+            placemark.thoroughfare,
+            placemark.subThoroughfare,
+            placemark.name
+        ]
+        .compactMap { $0 }
+        .filter { !$0.isEmpty }
+        .joined(separator: " ")
+    }
+
+    private func concreteAddress(for item: MKMapItem) -> String {
+        let placemarkAddress = compactAddress(for: item.placemark)
+        guard let name = item.name, !name.isEmpty else {
+            return placemarkAddress
+        }
+        if placemarkAddress.contains(name) {
+            return placemarkAddress
+        }
+        return ([placemarkAddress, name].filter { !$0.isEmpty }).joined(separator: " ")
+    }
+
+    private func concreteAddress(for placemark: CLPlacemark) -> String {
+        compactAddress(for: placemark)
     }
 }

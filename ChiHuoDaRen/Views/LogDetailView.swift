@@ -31,14 +31,15 @@ struct LogDetailView: View {
                     )
                 )
 
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 12) {
                     HStack(alignment: .firstTextBaseline) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(log.shopName)
-                                .font(.largeTitle.bold())
+                                .font(.largeTitle.weight(.black))
                                 .foregroundStyle(Color.ink)
                             Text("类型：\(log.foodType) · \(locationProvider.distanceText(to: log))")
-                                .foregroundStyle(.secondary)
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(Color.ink.opacity(0.58))
                         }
                         Spacer()
                         RatingBadge(value: log.finalRating)
@@ -54,25 +55,28 @@ struct LogDetailView: View {
                         }
                     }
                 }
+                .padding(14)
+                .ticketSurface()
 
                 if hasNavigationTarget {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("位置")
-                            .font(.headline)
+                            .font(.headline.weight(.black))
+                            .foregroundStyle(Color.ink)
                         Text(log.displayAddress)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.ink.opacity(0.62))
                         Button {
                             openNavigation()
                         } label: {
                             Label("导航去这里", systemImage: "map")
+                                .font(.headline.weight(.bold))
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(.tomato)
                     }
-                    .padding(12)
-                    .background(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .padding(14)
+                    .ticketSurface()
                 }
             }
             .padding(16)
@@ -149,10 +153,10 @@ struct FlowLayout: View {
         HStack {
             ForEach(items, id: \.self) { item in
                 Text(item)
-                    .font(.subheadline.weight(.medium))
+                    .font(.subheadline.weight(.semibold))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 7)
-                    .background(Color.leaf.opacity(0.12))
+                    .background(Color.scallionSoft)
                     .foregroundStyle(Color.leaf)
                     .clipShape(Capsule())
             }

@@ -114,6 +114,8 @@ struct LogEditorView: View {
         }
         .navigationTitle(existingLog == nil ? "新建探店" : "编辑探店")
         .navigationBarTitleDisplayMode(.inline)
+        .scrollContentBackground(.hidden)
+        .background(Color.paper)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("关闭") {
@@ -201,7 +203,7 @@ struct LogEditorView: View {
                         .frame(width: 44, height: 44)
                         .background(Color.tomato)
                         .clipShape(Circle())
-                        .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
+                        .shadow(color: Color.soy.opacity(0.18), radius: 10, y: 4)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("追加照片")
@@ -239,12 +241,13 @@ struct LogEditorView: View {
     }
 
     private func saveLog() {
-        guard !shopName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            errorMessage = "店名必填。"
-            return
-        }
-        guard !address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            errorMessage = "请先在地图上选择店铺地址。"
+        let validation = LogSaveValidation.canSave(
+            shopName: shopName,
+            address: address,
+            photoCount: currentPhotoCount
+        )
+        guard validation.isAllowed else {
+            errorMessage = validation.message
             return
         }
         let log = ensureLog()
@@ -349,7 +352,11 @@ struct LogEditorView: View {
     }
 
     private var canPersistDraft: Bool {
-        !shopName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !shopName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && currentPhotoCount > 0
+    }
+
+    private var currentPhotoCount: Int {
+        (log?.photos.count ?? 0) + pendingPhotoData.count
     }
 
     private func flushPendingPhotos(to log: FoodLog) {
@@ -417,12 +424,12 @@ private struct TypeSelectionGrid: View {
                         selection = type
                     } label: {
                         Text(type)
-                            .font(.subheadline.weight(.medium))
+                            .font(.subheadline.weight(.bold))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 9)
-                            .background(selection == type ? Color.tomato : Color.secondary.opacity(0.12))
+                            .background(selection == type ? Color.tomato : Color.chiliSoft.opacity(0.45))
                             .foregroundStyle(selection == type ? .white : Color.ink)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                     .buttonStyle(.plain)
                 }
@@ -447,9 +454,9 @@ private struct StarRatingRow: View {
             }
             Spacer()
             Text(value > 0 ? String(format: "%.1f", value) : "--")
-                .font(.body.monospacedDigit())
+                .font(.body.monospacedDigit().weight(.bold))
                 .frame(width: 42, alignment: .trailing)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.soy)
         }
     }
 }
@@ -475,9 +482,9 @@ private struct ThumbJudgementControl: View {
                 .font(.body.weight(.semibold))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
-                .background(selected ? selectedColor : Color.secondary.opacity(0.12))
+                .background(selected ? selectedColor : Color.chiliSoft.opacity(0.45))
                 .foregroundStyle(selected ? .white : Color.ink)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -521,13 +528,14 @@ private struct PhotoSourceSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             Capsule()
-                .fill(Color.secondary.opacity(0.28))
+                .fill(Color.riceLine.opacity(0.55))
                 .frame(width: 36, height: 5)
                 .padding(.top, 10)
                 .padding(.bottom, 14)
 
             Text("添加照片")
-                .font(.headline.weight(.semibold))
+                .font(.headline.weight(.black))
+                .foregroundStyle(Color.ink)
                 .padding(.bottom, 10)
 
             VStack(spacing: 0) {
@@ -548,13 +556,13 @@ private struct PhotoSourceSheet: View {
                 }
                 .buttonStyle(PhotoSourceButtonStyle())
             }
-            .background(Color(.secondarySystemGroupedBackground))
+            .background(Color.ticket)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .padding(.horizontal, 20)
 
             Spacer(minLength: 0)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Color.paper)
     }
 }
 
@@ -565,6 +573,6 @@ private struct PhotoSourceButtonStyle: ButtonStyle {
             .foregroundStyle(Color.ink)
             .padding(.horizontal, 18)
             .frame(height: 56)
-            .background(configuration.isPressed ? Color.black.opacity(0.06) : Color.clear)
+            .background(configuration.isPressed ? Color.chiliSoft.opacity(0.6) : Color.clear)
     }
 }

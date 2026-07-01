@@ -17,6 +17,8 @@ echo "== Swift syntax parse =="
 swiftc -parse \
   ChiHuoDaRen/App.swift \
   ChiHuoDaRen/Models/FoodModels.swift \
+  ChiHuoDaRen/Services/LogSaveValidation.swift \
+  ChiHuoDaRen/Services/MapInitialLocationPolicy.swift \
   ChiHuoDaRen/Services/RecommendationService.swift \
   ChiHuoDaRen/Services/UserLocationProvider.swift \
   ChiHuoDaRen/Views/ContentView.swift \
@@ -31,6 +33,14 @@ swiftc -parse \
 
 echo "== Core PRD flow =="
 swift Verification/CoreLogicVerification.swift
+
+echo "== Form validation =="
+swiftc ChiHuoDaRen/Services/LogSaveValidation.swift Verification/FormValidationVerification.swift -o /tmp/chihuodaren-form-validation
+/tmp/chihuodaren-form-validation
+
+echo "== Location selection =="
+swiftc ChiHuoDaRen/Services/MapInitialLocationPolicy.swift Verification/LocationSelectionVerification.swift -o /tmp/chihuodaren-location-selection
+/tmp/chihuodaren-location-selection
 
 if xcrun --sdk iphonesimulator --show-sdk-path >/dev/null 2>&1; then
   echo "== iOS simulator build =="

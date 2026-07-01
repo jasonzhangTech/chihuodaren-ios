@@ -27,10 +27,23 @@ struct ContentView: View {
 }
 
 extension Color {
-    static let tomato = Color(red: 0.86, green: 0.25, blue: 0.16)
-    static let ink = Color(red: 0.13, green: 0.12, blue: 0.1)
-    static let paper = Color(red: 0.98, green: 0.96, blue: 0.92)
-    static let leaf = Color(red: 0.18, green: 0.45, blue: 0.32)
+    static let tomato = Color(red: 0.84, green: 0.25, blue: 0.16)
+    static let ink = Color(red: 0.13, green: 0.10, blue: 0.08)
+    static let paper = Color(red: 0.94, green: 0.97, blue: 0.94)
+    static let leaf = Color(red: 0.18, green: 0.44, blue: 0.31)
+    static let ticket = Color(red: 1.0, green: 0.99, blue: 0.95)
+    static let soy = Color(red: 0.48, green: 0.32, blue: 0.22)
+    static let chiliSoft = Color(red: 1.0, green: 0.88, blue: 0.82)
+    static let scallionSoft = Color(red: 0.83, green: 0.92, blue: 0.85)
+    static let riceLine = Color(red: 0.76, green: 0.82, blue: 0.72)
+}
+
+extension View {
+    func ticketSurface(radius: CGFloat = 8) -> some View {
+        background(Color.ticket)
+            .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+            .shadow(color: Color.soy.opacity(0.10), radius: 16, x: 0, y: 8)
+    }
 }
 
 struct ChineseTextInput: ViewModifier {

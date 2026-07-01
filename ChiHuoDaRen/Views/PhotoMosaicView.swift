@@ -87,40 +87,31 @@ struct PhotoMosaicView: View {
         case .addPhoto:
             ZStack {
                 Rectangle()
-                    .fill(Color.tomato.opacity(0.12))
-                VStack(spacing: 8) {
+                    .fill(Color.chiliSoft.opacity(0.58))
+                VStack(spacing: 10) {
                     Image(systemName: "camera.fill")
                         .font(.title)
                     Text("添加美食照片")
-                        .font(.subheadline.weight(.medium))
+                        .font(.subheadline.weight(.black))
                 }
                 .foregroundStyle(Color.tomato)
             }
         case .defaultCover:
             ZStack {
-                LinearGradient(
-                    colors: [
-                        Color.tomato.opacity(0.92),
-                        Color(red: 0.96, green: 0.63, blue: 0.28),
-                        Color.leaf.opacity(0.86)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+                Color.ticket
 
-                Circle()
-                    .fill(.white.opacity(0.16))
-                    .frame(width: 170, height: 170)
-                    .offset(x: -96, y: -58)
+                VStack(spacing: 10) {
+                    Image(systemName: "fork.knife.circle.fill")
+                        .font(.system(size: 52, weight: .semibold))
+                        .foregroundStyle(Color.tomato)
+                    Text("照片待补")
+                        .font(.headline.weight(.black))
+                        .foregroundStyle(Color.ink)
+                }
 
-                Circle()
-                    .fill(.white.opacity(0.12))
-                    .frame(width: 140, height: 140)
-                    .offset(x: 112, y: 62)
-
-                Image(systemName: "fork.knife.circle.fill")
-                    .font(.system(size: 56, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.92))
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.riceLine.opacity(0.48), style: StrokeStyle(lineWidth: 1, dash: [7, 7]))
+                    .padding(10)
             }
         }
     }

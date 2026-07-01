@@ -19,9 +19,9 @@ struct EatDecisionView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 20) {
                 Text("今天吃啥")
-                    .font(.largeTitle.bold())
+                    .font(.largeTitle.weight(.black))
                     .foregroundStyle(Color.ink)
 
                 VStack(alignment: .leading, spacing: 16) {
@@ -34,14 +34,14 @@ struct EatDecisionView: View {
                         )
                     } label: {
                         Label("给我推荐", systemImage: "sparkles")
+                            .font(.headline.weight(.black))
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.tomato)
                 }
                 .padding(14)
-                .background(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .ticketSurface()
 
                 if let currentRecommendation = recommendation {
                     NavigationLink {
@@ -49,10 +49,16 @@ struct EatDecisionView: View {
                     } label: {
                         VStack(alignment: .leading, spacing: 12) {
                             FoodLogCard(log: currentRecommendation.log, distanceText: locationProvider.distanceText(to: currentRecommendation.log))
-                            Label(currentRecommendation.reason, systemImage: "lightbulb")
-                                .font(.subheadline.weight(.medium))
-                                .foregroundStyle(Color.leaf)
-                                .padding(.horizontal, 4)
+                            HStack(alignment: .top, spacing: 10) {
+                                Image(systemName: "lightbulb.fill")
+                                    .foregroundStyle(Color.tomato)
+                                Text(currentRecommendation.reason)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(Color.ink.opacity(0.74))
+                            }
+                            .padding(12)
+                            .background(Color.scallionSoft.opacity(0.72))
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         }
                     }
                     .buttonStyle(.plain)
@@ -61,6 +67,8 @@ struct EatDecisionView: View {
                         recommendation = randomAlternative()
                     } label: {
                         Label("换一个", systemImage: "shuffle")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(Color.tomato)
                     }
                 } else {
                     VStack(spacing: 12) {
@@ -68,10 +76,11 @@ struct EatDecisionView: View {
                             .font(.system(size: 36))
                             .foregroundStyle(Color.tomato)
                         Text("还没有匹配记录")
-                            .font(.headline)
+                            .font(.headline.weight(.black))
+                            .foregroundStyle(Color.ink)
                         Text("多记几家推荐店后，这里会按评分和类型帮你挑。")
                             .font(.body)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.ink.opacity(0.55))
                             .multilineTextAlignment(.center)
                     }
                     .frame(maxWidth: .infinity)
@@ -100,12 +109,12 @@ struct EatDecisionView: View {
                         recommendation = nil
                     } label: {
                         Text(filter)
-                            .font(.subheadline.weight(.medium))
+                            .font(.subheadline.weight(.bold))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(selectedFilter == filter ? Color.tomato : Color.secondary.opacity(0.12))
+                            .background(selectedFilter == filter ? Color.tomato : Color.chiliSoft.opacity(0.45))
                             .foregroundStyle(selectedFilter == filter ? .white : Color.ink)
-                            .clipShape(Capsule())
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                     .buttonStyle(.plain)
                 }
