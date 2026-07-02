@@ -18,6 +18,7 @@ swiftc -parse \
   ChiHuoDaRen/App.swift \
   ChiHuoDaRen/Models/FoodModels.swift \
   ChiHuoDaRen/Services/LogSaveValidation.swift \
+  ChiHuoDaRen/Services/DeleteConfirmationPolicy.swift \
   ChiHuoDaRen/Services/MapInitialLocationPolicy.swift \
   ChiHuoDaRen/Services/RecommendationService.swift \
   ChiHuoDaRen/Services/UserLocationProvider.swift \
@@ -27,6 +28,7 @@ swiftc -parse \
   ChiHuoDaRen/Views/PhotoMosaicView.swift \
   ChiHuoDaRen/Views/LogEditorView.swift \
   ChiHuoDaRen/Views/CameraCaptureView.swift \
+  ChiHuoDaRen/Views/DeleteConfirmationAlert.swift \
   ChiHuoDaRen/Views/MapLocationPickerView.swift \
   ChiHuoDaRen/Views/LogDetailView.swift \
   ChiHuoDaRen/Views/EatDecisionView.swift
@@ -37,6 +39,10 @@ swift Verification/CoreLogicVerification.swift
 echo "== Form validation =="
 swiftc ChiHuoDaRen/Services/LogSaveValidation.swift Verification/FormValidationVerification.swift -o /tmp/chihuodaren-form-validation
 /tmp/chihuodaren-form-validation
+
+echo "== Delete confirmation =="
+swiftc ChiHuoDaRen/Services/DeleteConfirmationPolicy.swift Verification/DeleteConfirmationVerification.swift -o /tmp/chihuodaren-delete-confirmation
+/tmp/chihuodaren-delete-confirmation
 
 echo "== Location selection =="
 swiftc ChiHuoDaRen/Services/MapInitialLocationPolicy.swift Verification/LocationSelectionVerification.swift -o /tmp/chihuodaren-location-selection

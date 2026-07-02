@@ -86,9 +86,9 @@ struct MapLocationPickerView: View {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
-	                TextField("搜索店名或地址", text: $searchText)
-	                    .chineseTextInput()
-	                    .submitLabel(.search)
+                TextField("搜索店名或地址", text: $searchText)
+                    .chineseTextInput()
+                    .submitLabel(.search)
                     .onSubmit { searchPlaces() }
                 Button("搜索", action: searchPlaces)
                     .font(.body.weight(.semibold))
@@ -103,7 +103,9 @@ struct MapLocationPickerView: View {
                     HStack(spacing: 8) {
                         ForEach(searchResults, id: \.self) { item in
                             Button {
-                                select(mapItem: item)
+                                withAnimation(FoodMotion.gentle) {
+                                    select(mapItem: item)
+                                }
                             } label: {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(item.name ?? "未命名地点")
@@ -119,15 +121,18 @@ struct MapLocationPickerView: View {
                                 .background(.white)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(CardPressButtonStyle())
+                            .transition(.move(edge: .trailing).combined(with: .opacity))
                         }
                     }
                     .padding(.horizontal, 16)
                 }
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
         .padding(16)
         .background(Color(.systemGroupedBackground))
+        .animation(FoodMotion.gentle, value: searchResults.count)
     }
 
     @ViewBuilder
@@ -147,6 +152,8 @@ struct MapLocationPickerView: View {
             .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .padding(16)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .animation(FoodMotion.gentle, value: selectedLocationTitle)
         }
     }
 

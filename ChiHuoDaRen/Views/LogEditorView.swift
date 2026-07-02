@@ -30,7 +30,9 @@ struct LogEditorView: View {
     @State private var longitude: Double?
     @State private var isPitfall = false
     @State private var errorMessage: String?
+    @State private var errorToastID = UUID()
     @State private var showingLocationPicker = false
+    @State private var showingDeleteConfirmation = false
 
     private let foodTypes = ["火锅", "烧烤", "烤肉", "正餐", "小吃", "咖啡", "甜品", "粉面", "其他"]
 
@@ -104,18 +106,21 @@ struct LogEditorView: View {
             Section("评价") {
                 ThumbJudgementControl(isPitfall: $isPitfall)
             }
-
-            if let errorMessage {
-                Section {
-                    Text(errorMessage)
-                        .foregroundStyle(.red)
-                }
-            }
         }
         .navigationTitle(existingLog == nil ? "新建探店" : "编辑探店")
         .navigationBarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
         .background(Color.paper)
+        .overlay(alignment: .top) {
+            if let errorMessage {
+                FormToast(message: errorMessage)
+                    .id(errorToastID)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 10)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(FoodMotion.gentle, value: errorToastID)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("关闭") {
@@ -126,7 +131,7 @@ struct LogEditorView: View {
             if existingLog != nil {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("删除", role: .destructive) {
-                        deleteCurrentLog()
+                        showingDeleteConfirmation = true
                     }
                 }
             }
@@ -168,6 +173,9 @@ struct LogEditorView: View {
                 }
             }
         }
+        .deleteConfirmationAlert(isPresented: $showingDeleteConfirmation) {
+            deleteCurrentLog()
+        }
         .onChange(of: selectedItems) { _, items in
             loadPhotos(items)
         }
@@ -208,8 +216,10 @@ struct LogEditorView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("追加照片")
                 .padding(12)
+                .transition(.scale(scale: 0.86).combined(with: .opacity))
             }
         }
+        .animation(FoodMotion.gentle, value: photos.count)
     }
 
     private func prepareLog() {
@@ -247,7 +257,7 @@ struct LogEditorView: View {
             photoCount: currentPhotoCount
         )
         guard validation.isAllowed else {
-            errorMessage = validation.message
+            showErrorToast(validation.message)
             return
         }
         let log = ensureLog()
@@ -401,6 +411,42 @@ struct LogEditorView: View {
         guard !parts.isEmpty else { return 0 }
         return parts.reduce(0, +) / Double(parts.count)
     }
+
+    private func showErrorToast(_ message: String?) {
+        guard let message else { return }
+        let toastID = UUID()
+        withAnimation(FoodMotion.quick) {
+            errorMessage = message
+            errorToastID = toastID
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+            guard errorToastID == toastID else { return }
+            withAnimation(FoodMotion.gentle) {
+                errorMessage = nil
+            }
+        }
+    }
+}
+
+private struct FormToast: View {
+    let message: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.circle.fill")
+                .font(.body.weight(.semibold))
+            Text(message)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(2)
+            Spacer(minLength: 0)
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color.tomato)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .shadow(color: Color.soy.opacity(0.20), radius: 14, y: 8)
+    }
 }
 
 private struct TypeSelectionGrid: View {
@@ -421,7 +467,9 @@ private struct TypeSelectionGrid: View {
             LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
                 ForEach(types, id: \.self) { type in
                     Button {
-                        selection = type
+                        withAnimation(FoodMotion.quick) {
+                            selection = type
+                        }
                     } label: {
                         Text(type)
                             .font(.subheadline.weight(.bold))
@@ -430,8 +478,9 @@ private struct TypeSelectionGrid: View {
                             .background(selection == type ? Color.tomato : Color.chiliSoft.opacity(0.45))
                             .foregroundStyle(selection == type ? .white : Color.ink)
                             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .scaleEffect(selection == type ? 1.02 : 1)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressScaleButtonStyle())
                 }
             }
         }
@@ -467,10 +516,14 @@ private struct ThumbJudgementControl: View {
     var body: some View {
         HStack(spacing: 10) {
             judgementButton(title: "推荐", systemImage: "hand.thumbsup.fill", selected: !isPitfall, selectedColor: .tomato) {
-                isPitfall = false
+                withAnimation(FoodMotion.quick) {
+                    isPitfall = false
+                }
             }
             judgementButton(title: "踩雷", systemImage: "hand.thumbsdown.fill", selected: isPitfall, selectedColor: .leaf) {
-                isPitfall = true
+                withAnimation(FoodMotion.quick) {
+                    isPitfall = true
+                }
             }
         }
         .padding(.vertical, 4)
@@ -485,8 +538,9 @@ private struct ThumbJudgementControl: View {
                 .background(selected ? selectedColor : Color.chiliSoft.opacity(0.45))
                 .foregroundStyle(selected ? .white : Color.ink)
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .scaleEffect(selected ? 1.02 : 1)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressScaleButtonStyle())
     }
 }
 
@@ -503,9 +557,12 @@ private struct HalfStarButton: View {
             .gesture(
                 SpatialTapGesture()
                     .onEnded { gesture in
-                        value = gesture.location.x < 16 ? Double(index) - 0.5 : Double(index)
+                        withAnimation(FoodMotion.quick) {
+                            value = gesture.location.x < 16 ? Double(index) - 0.5 : Double(index)
+                        }
                     }
             )
+            .symbolEffect(.bounce, value: value)
         .accessibilityLabel("\(index) 星")
     }
 
@@ -574,5 +631,7 @@ private struct PhotoSourceButtonStyle: ButtonStyle {
             .padding(.horizontal, 18)
             .frame(height: 56)
             .background(configuration.isPressed ? Color.chiliSoft.opacity(0.6) : Color.clear)
+            .scaleEffect(configuration.isPressed ? 0.985 : 1)
+            .animation(FoodMotion.quick, value: configuration.isPressed)
     }
 }

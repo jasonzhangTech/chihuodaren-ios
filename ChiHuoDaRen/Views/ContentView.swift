@@ -46,6 +46,41 @@ extension View {
     }
 }
 
+enum FoodMotion {
+    static let quick = Animation.spring(response: 0.26, dampingFraction: 0.78)
+    static let gentle = Animation.spring(response: 0.42, dampingFraction: 0.86)
+    static let card = Animation.spring(response: 0.50, dampingFraction: 0.82)
+
+    static var cardInsertion: AnyTransition {
+        .asymmetric(
+            insertion: .move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.98)),
+            removal: .opacity.combined(with: .scale(scale: 0.98))
+        )
+    }
+}
+
+struct PressScaleButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(reduceMotion || !configuration.isPressed ? 1 : 0.96)
+            .brightness(configuration.isPressed ? -0.03 : 0)
+            .animation(FoodMotion.quick, value: configuration.isPressed)
+    }
+}
+
+struct CardPressButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(reduceMotion || !configuration.isPressed ? 1 : 0.985)
+            .shadow(color: configuration.isPressed ? Color.soy.opacity(0.05) : Color.clear, radius: 6, y: 2)
+            .animation(FoodMotion.quick, value: configuration.isPressed)
+    }
+}
+
 struct ChineseTextInput: ViewModifier {
     func body(content: Content) -> some View {
         #if os(iOS)

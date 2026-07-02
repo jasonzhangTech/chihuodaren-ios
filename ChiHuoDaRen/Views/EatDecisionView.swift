@@ -6,6 +6,7 @@ struct EatDecisionView: View {
     @Query(sort: \FoodLog.updatedAt, order: .reverse) private var logs: [FoodLog]
     @State private var selectedFilter = "全部"
     @State private var recommendation: FoodRecommendation?
+    @State private var didEnter = false
 
     private var filters: [String] {
         let foodTypes = logs
@@ -28,10 +29,12 @@ struct EatDecisionView: View {
                     filterBar
 
                     Button {
-                        recommendation = RecommendationService.recommend(
-                            from: logs,
-                            filter: selectedFilter
-                        )
+                        withAnimation(FoodMotion.card) {
+                            recommendation = RecommendationService.recommend(
+                                from: logs,
+                                filter: selectedFilter
+                            )
+                        }
                     } label: {
                         Label("给我推荐", systemImage: "sparkles")
                             .font(.headline.weight(.black))
@@ -39,6 +42,7 @@ struct EatDecisionView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.tomato)
+                    .sensoryFeedback(.impact(weight: .medium), trigger: recommendation?.log.id)
                 }
                 .padding(14)
                 .ticketSurface()
@@ -61,15 +65,20 @@ struct EatDecisionView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(CardPressButtonStyle())
+                    .id(currentRecommendation.log.id)
+                    .transition(FoodMotion.cardInsertion)
 
                     Button {
-                        recommendation = randomAlternative()
+                        withAnimation(FoodMotion.card) {
+                            recommendation = randomAlternative()
+                        }
                     } label: {
                         Label("换一个", systemImage: "shuffle")
                             .font(.headline.weight(.bold))
                             .foregroundStyle(Color.tomato)
                     }
+                    .buttonStyle(PressScaleButtonStyle())
                 } else {
                     VStack(spacing: 12) {
                         Image(systemName: "tray")
@@ -88,12 +97,17 @@ struct EatDecisionView: View {
                 }
             }
             .padding(16)
+            .opacity(didEnter ? 1 : 0)
+            .offset(y: didEnter ? 0 : 10)
         }
         .background(Color.paper)
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             locationProvider.refresh()
             resetMissingFilter()
+            withAnimation(FoodMotion.gentle) {
+                didEnter = true
+            }
         }
         .onChange(of: filters) { _, _ in
             resetMissingFilter()
@@ -105,8 +119,10 @@ struct EatDecisionView: View {
             HStack(spacing: 8) {
                 ForEach(filters, id: \.self) { filter in
                     Button {
-                        selectedFilter = filter
-                        recommendation = nil
+                        withAnimation(FoodMotion.quick) {
+                            selectedFilter = filter
+                            recommendation = nil
+                        }
                     } label: {
                         Text(filter)
                             .font(.subheadline.weight(.bold))
@@ -116,7 +132,7 @@ struct EatDecisionView: View {
                             .foregroundStyle(selectedFilter == filter ? .white : Color.ink)
                             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressScaleButtonStyle())
                 }
             }
         }

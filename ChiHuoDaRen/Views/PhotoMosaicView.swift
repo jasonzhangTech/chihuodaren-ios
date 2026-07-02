@@ -62,6 +62,7 @@ struct PhotoMosaicView: View {
                                 photoImage(photoData)
                                     .frame(width: itemSize, height: itemSize)
                                     .clipped()
+                                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
                                 if showsOverflowCount && index == displayPhotos.count - 1 && imageData.count > displayPhotos.count {
                                     Text("+\(imageData.count - displayPhotos.count)")
                                         .font(.headline.bold())
@@ -79,6 +80,7 @@ struct PhotoMosaicView: View {
         .frame(height: height)
         .compositingGroup()
         .clipShape(RoundedRectangle(cornerRadius: 8))
+        .animation(FoodMotion.gentle, value: imageData.count)
     }
 
     @ViewBuilder

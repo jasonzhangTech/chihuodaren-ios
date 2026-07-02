@@ -6,6 +6,7 @@ import UIKit
 struct FoodLogCard: View {
     let log: FoodLog
     let distanceText: String
+    @State private var didAppear = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -85,6 +86,13 @@ struct FoodLogCard: View {
                 .stroke(Color.riceLine.opacity(0.24), lineWidth: 1)
         }
         .shadow(color: Color.soy.opacity(0.12), radius: 18, x: 0, y: 8)
+        .opacity(didAppear ? 1 : 0)
+        .offset(y: didAppear ? 0 : 8)
+        .onAppear {
+            withAnimation(FoodMotion.card) {
+                didAppear = true
+            }
+        }
     }
 
     private var estimatedCardWidth: CGFloat {

@@ -10,6 +10,8 @@ struct LogDetailView: View {
     @EnvironmentObject private var locationProvider: UserLocationProvider
     @Bindable var log: FoodLog
     @State private var showingEditor = false
+    @State private var didEnter = false
+    @State private var showingDeleteConfirmation = false
 
     var body: some View {
         ScrollView {
@@ -77,10 +79,13 @@ struct LogDetailView: View {
                     }
                     .padding(14)
                     .ticketSurface()
+                    .transition(FoodMotion.cardInsertion)
                 }
             }
             .padding(16)
             .padding(.bottom, 110)
+            .opacity(didEnter ? 1 : 0)
+            .offset(y: didEnter ? 0 : 12)
         }
         .background(Color.paper)
         .tint(.tomato)
@@ -88,13 +93,14 @@ struct LogDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             locationProvider.refresh()
+            withAnimation(FoodMotion.gentle) {
+                didEnter = true
+            }
         }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button("删除", role: .destructive) {
-                    modelContext.delete(log)
-                    try? modelContext.save()
-                    dismiss()
+                    showingDeleteConfirmation = true
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
@@ -107,6 +113,9 @@ struct LogDetailView: View {
             NavigationStack {
                 LogEditorView(log: log)
             }
+        }
+        .deleteConfirmationAlert(isPresented: $showingDeleteConfirmation) {
+            deleteLog()
         }
     }
 
@@ -143,6 +152,12 @@ struct LogDetailView: View {
         #if canImport(UIKit)
         UIApplication.shared.open(url)
         #endif
+    }
+
+    private func deleteLog() {
+        modelContext.delete(log)
+        try? modelContext.save()
+        dismiss()
     }
 }
 

@@ -8,6 +8,7 @@ struct LogListView: View {
     @State private var searchText = ""
     @State private var selectedFilter = "全部"
     @State private var showingNewLog = false
+    @State private var didEnter = false
 
     private let calendar = Calendar(identifier: .gregorian)
 
@@ -89,15 +90,19 @@ struct LogListView: View {
                                         } label: {
                                             FoodLogCard(log: log, distanceText: locationProvider.distanceText(to: log))
                                         }
-                                        .buttonStyle(.plain)
+                                        .buttonStyle(CardPressButtonStyle())
+                                        .transition(FoodMotion.cardInsertion)
                                     }
                                 }
                             }
                         }
+                        .animation(FoodMotion.card, value: filteredLogs.map(\.id))
                     }
                 }
                 .padding(16)
                 .padding(.bottom, 72)
+                .opacity(didEnter ? 1 : 0)
+                .offset(y: didEnter ? 0 : 10)
             }
             .searchable(text: $searchText, prompt: "搜店名、菜名、口味")
             .environment(\.locale, Locale(identifier: "zh_Hans_CN"))
@@ -115,6 +120,8 @@ struct LogListView: View {
                     .clipShape(Capsule())
                     .shadow(color: .black.opacity(0.18), radius: 14, y: 8)
             }
+            .buttonStyle(PressScaleButtonStyle())
+            .sensoryFeedback(.impact(weight: .medium), trigger: showingNewLog)
             .padding(20)
         }
         .sheet(isPresented: $showingNewLog) {
@@ -125,6 +132,9 @@ struct LogListView: View {
         .onAppear {
             locationProvider.refresh()
             resetMissingFilter()
+            withAnimation(FoodMotion.gentle) {
+                didEnter = true
+            }
         }
         .onChange(of: filters) { _, _ in
             resetMissingFilter()
@@ -165,7 +175,9 @@ struct LogListView: View {
             HStack(spacing: 8) {
                 ForEach(filters, id: \.self) { filter in
                     Button {
-                        selectedFilter = filter
+                        withAnimation(FoodMotion.quick) {
+                            selectedFilter = filter
+                        }
                     } label: {
                         Text(filter)
                             .font(.subheadline.weight(.bold))
@@ -179,7 +191,7 @@ struct LogListView: View {
                                     .stroke(selectedFilter == filter ? Color.clear : Color.riceLine.opacity(0.32), lineWidth: 1)
                             }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressScaleButtonStyle())
                 }
             }
         }
